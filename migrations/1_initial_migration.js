@@ -1,7 +1,5 @@
 const BRZToken = artifacts.require("BRZToken");
 const Bridge = artifacts.require("Bridge");
-const Monitor = artifacts.require("Monitor");
-
 
 module.exports = async (deployer, network, accounts)=> {
 
@@ -22,6 +20,10 @@ module.exports = async (deployer, network, accounts)=> {
   else if (network == 'testnet') {
     brzTokenAddress = "0x06d164E8d6829E1dA028A4F745d330Eb764Dd3aC";
     brzTokenAddress = brzTokenAddress.toLowerCase();
+  }
+  else if (network == 'bsc-testnet') {
+    brzTokenAddress = "0x5f974f5e28a8ed3d2576c99333ca9e730edf04de";
+    brzTokenAddress = brzTokenAddress.toLowerCase();
   }  
   console.log("brzTokenAddress", brzTokenAddress);
   
@@ -31,13 +33,41 @@ module.exports = async (deployer, network, accounts)=> {
   bridge = await Bridge.deployed();
   console.log("bridge.address", bridge.address);
 
-  // Monitor
-  monitor = await deployer.deploy(Monitor, [accounts[0]], 1, {from: accounts[0]});  
-  console.log("monitor.address", monitor.address);
 
-  console.log("monitor.setBridge: ", bridge.address);
-  await monitor.setBridge(bridge.address, {from: accounts[0]});
+  const feePercentageBridge = 10;  
+  console.log("bridge.setfeePercentageBridge", feePercentageBridge);
+  await bridge.setfeePercentageBridge(feePercentageBridge, {from: accounts[0]});
+  response = await bridge.getfeePercentageBridge();
+  console.log("bridge.getfeePercentageBridge", response.toString());
+
+
+  if (network == 'develop') {
+    await bridge.addBlockchain("BinanceSmartChainTestnet", {from: accounts[0]});
+    await bridge.addBlockchain("EthereumRinkeby", {from: accounts[0]});
+    await bridge.addBlockchain("RSKTestnet", {from: accounts[0]});
+    await bridge.addBlockchain("SolanaDevnet", {from: accounts[0]});
+  }
+  else if (network == 'rinkeby') {
+    await bridge.addBlockchain("BinanceSmartChainTestnet", {from: accounts[0]});
+    await bridge.addBlockchain("RSKTestnet", {from: accounts[0]});
+    await bridge.addBlockchain("SolanaDevnet", {from: accounts[0]});
+  }
+  else if (network == 'rskTestnet') {
+    await bridge.addBlockchain("EthereumRinkeby", {from: accounts[0]});
+    await bridge.addBlockchain("BinanceSmartChainTestnet", {from: accounts[0]});
+    await bridge.addBlockchain("SolanaDevnet", {from: accounts[0]});
+  }  
+  else if (network == 'bscTestnet') {
+    await bridge.addBlockchain("EthereumRinkeby", {from: accounts[0]});
+    await bridge.addBlockchain("RSKTestnet", {from: accounts[0]});
+    await bridge.addBlockchain("SolanaDevnet", {from: accounts[0]});
+  }
+  
+  blockchainList = await bridge.listBlockchain();
+  console.log("blockchainList", blockchainList);
+
 /*
 
-*/  
+*/
+
 };

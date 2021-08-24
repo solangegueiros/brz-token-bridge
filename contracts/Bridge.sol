@@ -4,7 +4,6 @@ pragma solidity 0.8.4;
 // Inpired on https://github.com/rsksmart/tokenbridge/blob/master/bridge/contracts/Bridge.sol
 
 import './ozeppelin/access/AccessControl.sol';
-import "./ozeppelin/token/ERC20/IERC20.sol";
 import "./ozeppelin/security/Pausable.sol";
 import "./ozeppelin/utils/math/SafeMath.sol";
 import "./IBridge.sol";
