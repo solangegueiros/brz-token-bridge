@@ -43318,7 +43318,7 @@
   },
   "networks": {},
   "schemaVersion": "3.4.3",
-  "updatedAt": "2021-09-02T15:07:50.955Z",
+  "updatedAt": "2021-09-02T15:08:33.434Z",
   "devdoc": {
     "details": "BRZ token Bridge Author: Solange Gueiros Smart contract to cross the BRZ token between EVM compatible blockchains. The tokens are crossed by TransferoSwiss, the company that controls the issuance of BRZs. It uses [Open Zeppelin Contracts] (https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.1.0/)",
     "kind": "dev",
