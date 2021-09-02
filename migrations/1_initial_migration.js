@@ -1,6 +1,8 @@
 const BRZToken = artifacts.require("BRZToken");
 const Bridge = artifacts.require("Bridge");
 
+const MonitorAddress = "0xff4dbdf4a43f5889fc24f112ea2b596d137cf1f7";
+
 module.exports = async (deployer, network, accounts)=> {
 
   let brzTokenAddress;
@@ -41,6 +43,7 @@ module.exports = async (deployer, network, accounts)=> {
   console.log("bridge.getFeePercentageBridge", response.toString());
 
 
+  console.log("\n addBlockchain");
   if (network == 'develop' || network == 'development') {
     await bridge.addBlockchain("BinanceSmartChainTestnet", {from: accounts[0]});
     await bridge.addBlockchain("EthereumRinkeby", {from: accounts[0]});
@@ -65,5 +68,8 @@ module.exports = async (deployer, network, accounts)=> {
   
   blockchainList = await bridge.listBlockchain();
   console.log("blockchainList", blockchainList);
+
+  console.log("\n addMonitor");
+  await bridge.addMonitor(MonitorAddress, {from: accounts[0]});
 
 };

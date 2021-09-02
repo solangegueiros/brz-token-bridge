@@ -98,7 +98,7 @@ module.exports = {
 
   // Set default mocha options here, use special reporters etc.
   mocha: {
-    //reporter: 'eth-gas-reporter',
+    reporter: 'eth-gas-reporter',
     //enableTimeouts: false,
     //before_timeout: 600000, // <--- units in ms
     timeout: 600000,         //1s = 1000, 1min = 60000, 10min = 600000, 30min = 1800000
