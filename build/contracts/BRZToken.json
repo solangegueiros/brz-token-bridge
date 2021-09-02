@@ -15061,55 +15061,55 @@
     "absolutePath": "project:/contracts/BRZToken.sol",
     "exportedSymbols": {
       "AccessControl": [
-        1272
+        1283
       ],
       "AccessControlEnumerable": [
-        1462
+        1473
       ],
       "BRZToken": [
         13
       ],
       "Context": [
-        2423
+        2434
       ],
       "ERC165": [
-        2650
+        2661
       ],
       "ERC20": [
-        2063
+        2074
       ],
       "ERC20Burnable": [
-        2202
+        2213
       ],
       "ERC20Pausable": [
-        2239
+        2250
       ],
       "ERC20PresetMinterPauser": [
-        2400
+        2411
       ],
       "EnumerableSet": [
-        3487
+        3498
       ],
       "IAccessControl": [
-        948
+        959
       ],
       "IAccessControlEnumerable": [
-        1294
+        1305
       ],
       "IERC165": [
-        2662
+        2673
       ],
       "IERC20": [
-        2141
+        2152
       ],
       "IERC20Metadata": [
-        2264
+        2275
       ],
       "Pausable": [
-        1556
+        1567
       ],
       "Strings": [
-        2626
+        2637
       ]
     },
     "id": 14,
@@ -15133,7 +15133,7 @@
         "nameLocation": "-1:-1:-1",
         "nodeType": "ImportDirective",
         "scope": 14,
-        "sourceUnit": 2401,
+        "sourceUnit": 2412,
         "src": "291:69:0",
         "symbolAliases": [],
         "unitAlias": ""
@@ -15146,7 +15146,7 @@
               "id": 3,
               "name": "ERC20PresetMinterPauser",
               "nodeType": "IdentifierPath",
-              "referencedDeclaration": 2400,
+              "referencedDeclaration": 2411,
               "src": "383:23:0"
             },
             "id": 4,
@@ -15160,20 +15160,20 @@
         "id": 13,
         "linearizedBaseContracts": [
           13,
-          2400,
-          2239,
-          1556,
-          2202,
-          2063,
-          2264,
-          2141,
-          1462,
-          1272,
-          2650,
-          2662,
-          948,
-          2423,
-          1294
+          2411,
+          2250,
+          1567,
+          2213,
+          2074,
+          2275,
+          2152,
+          1473,
+          1283,
+          2661,
+          2673,
+          959,
+          2434,
+          1305
         ],
         "name": "BRZToken",
         "nameLocation": "371:8:0",
@@ -15231,7 +15231,7 @@
                   "id": 6,
                   "name": "ERC20PresetMinterPauser",
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 2400,
+                  "referencedDeclaration": 2411,
                   "src": "425:23:0"
                 },
                 "nodeType": "ModifierInvocation",
@@ -15271,55 +15271,55 @@
     "absolutePath": "project:/contracts/BRZToken.sol",
     "exportedSymbols": {
       "AccessControl": [
-        1272
+        1283
       ],
       "AccessControlEnumerable": [
-        1462
+        1473
       ],
       "BRZToken": [
         13
       ],
       "Context": [
-        2423
+        2434
       ],
       "ERC165": [
-        2650
+        2661
       ],
       "ERC20": [
-        2063
+        2074
       ],
       "ERC20Burnable": [
-        2202
+        2213
       ],
       "ERC20Pausable": [
-        2239
+        2250
       ],
       "ERC20PresetMinterPauser": [
-        2400
+        2411
       ],
       "EnumerableSet": [
-        3487
+        3498
       ],
       "IAccessControl": [
-        948
+        959
       ],
       "IAccessControlEnumerable": [
-        1294
+        1305
       ],
       "IERC165": [
-        2662
+        2673
       ],
       "IERC20": [
-        2141
+        2152
       ],
       "IERC20Metadata": [
-        2264
+        2275
       ],
       "Pausable": [
-        1556
+        1567
       ],
       "Strings": [
-        2626
+        2637
       ]
     },
     "id": 14,
@@ -15343,7 +15343,7 @@
         "nameLocation": "-1:-1:-1",
         "nodeType": "ImportDirective",
         "scope": 14,
-        "sourceUnit": 2401,
+        "sourceUnit": 2412,
         "src": "291:69:0",
         "symbolAliases": [],
         "unitAlias": ""
@@ -15356,7 +15356,7 @@
               "id": 3,
               "name": "ERC20PresetMinterPauser",
               "nodeType": "IdentifierPath",
-              "referencedDeclaration": 2400,
+              "referencedDeclaration": 2411,
               "src": "383:23:0"
             },
             "id": 4,
@@ -15370,20 +15370,20 @@
         "id": 13,
         "linearizedBaseContracts": [
           13,
-          2400,
-          2239,
-          1556,
-          2202,
-          2063,
-          2264,
-          2141,
-          1462,
-          1272,
-          2650,
-          2662,
-          948,
-          2423,
-          1294
+          2411,
+          2250,
+          1567,
+          2213,
+          2074,
+          2275,
+          2152,
+          1473,
+          1283,
+          2661,
+          2673,
+          959,
+          2434,
+          1305
         ],
         "name": "BRZToken",
         "nameLocation": "371:8:0",
@@ -15441,7 +15441,7 @@
                   "id": 6,
                   "name": "ERC20PresetMinterPauser",
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 2400,
+                  "referencedDeclaration": 2411,
                   "src": "425:23:0"
                 },
                 "nodeType": "ModifierInvocation",
@@ -15483,7 +15483,7 @@
   },
   "networks": {},
   "schemaVersion": "3.4.3",
-  "updatedAt": "2021-09-01T22:57:07.544Z",
+  "updatedAt": "2021-09-02T15:07:50.933Z",
   "devdoc": {
     "kind": "dev",
     "methods": {
