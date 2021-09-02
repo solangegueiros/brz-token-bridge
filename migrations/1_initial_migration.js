@@ -7,21 +7,21 @@ module.exports = async (deployer, network, accounts)=> {
 
   console.log("network", network);
 
-  //id 5777
-  if (network == 'develop') {
+  if (network == 'develop' || network == 'development') {
+    //id 5777
     await deployer.deploy(BRZToken, {from: accounts[0]});
     brzToken = await BRZToken.deployed();
     brzTokenAddress = brzToken.address;
   }
   else if (network == 'rinkeby') {
-    brzTokenAddress = "0xaE598dE8d90A691D62d727a21D8B563ABb8Df35E";
+    brzTokenAddress = "0x420412E765BFa6d85aaaC94b4f7b708C89be2e2B";
 
   }
-  else if (network == 'testnet') {
-    brzTokenAddress = "0x06d164E8d6829E1dA028A4F745d330Eb764Dd3aC";
+  else if (network == 'rskTestnet') {
+    brzTokenAddress = "0xe355c280131dfaf18bf1c3648aee3c396db6b5fd";
     brzTokenAddress = brzTokenAddress.toLowerCase();
   }
-  else if (network == 'bsc-testnet') {
+  else if (network == 'bscTestnet') {
     brzTokenAddress = "0x5f974f5e28a8ed3d2576c99333ca9e730edf04de";
     brzTokenAddress = brzTokenAddress.toLowerCase();
   }  
@@ -34,14 +34,14 @@ module.exports = async (deployer, network, accounts)=> {
   console.log("bridge.address", bridge.address);
 
 
-  const feePercentageBridge = 10;  
-  console.log("bridge.setfeePercentageBridge", feePercentageBridge);
-  await bridge.setfeePercentageBridge(feePercentageBridge, {from: accounts[0]});
-  response = await bridge.getfeePercentageBridge();
-  console.log("bridge.getfeePercentageBridge", response.toString());
+  // In constructor: feePercentageBridge = 10;  
+  // console.log("bridge.setFeePercentageBridge", feePercentageBridge);
+  // await bridge.setFeePercentageBridge(feePercentageBridge, {from: accounts[0]});
+  response = await bridge.getFeePercentageBridge();
+  console.log("bridge.getFeePercentageBridge", response.toString());
 
 
-  if (network == 'develop') {
+  if (network == 'develop' || network == 'development') {
     await bridge.addBlockchain("BinanceSmartChainTestnet", {from: accounts[0]});
     await bridge.addBlockchain("EthereumRinkeby", {from: accounts[0]});
     await bridge.addBlockchain("RSKTestnet", {from: accounts[0]});
@@ -65,9 +65,5 @@ module.exports = async (deployer, network, accounts)=> {
   
   blockchainList = await bridge.listBlockchain();
   console.log("blockchainList", blockchainList);
-
-/*
-
-*/
 
 };

@@ -1,23 +1,50 @@
 {
   "name": "brz-tokenbridge",
-  "version": "1.0.0",
+  "version": "0.3.0",
   "description": "",
   "main": "truffle-config.js",
   "directories": {
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "doc": "npx solidity-docgen --solc-module solc-0.8.4",
+    "prettier:solidity": "./node_modules/.bin/prettier --write contracts/**/*.sol",
+    "solhint": "./node_modules/.bin/solhint -f table contracts/**/*.sol",
+    "test": "truffle test"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "husky": {
+    "hooks": {
+      "pre-push": "npm run prettier:solidity"
+    }
+  },
+  "keywords": [
+    "blockchain",
+    "smart contracts",
+    "ethereum"
+  ],
+  "author": "Solange Gueiros <solangegueiros@gmail.com> (https://solange.dev)",
+  "license": "MIT",
   "dependencies": {
     "@openzeppelin/contracts": "4.1.0",
     "@truffle/hdwallet-provider": "1.4.0",
-    "dotenv": "^10.0.0"
+    "dotenv": "^10.0.0",
+    "solidity-docgen": "^0.5.13",
+    "truffle-assertions": "^0.9.2"
   },
   "devDependencies": {
-    "truffle-plugin-verify": "^0.5.9"
+    "husky": "^7.0.2",
+    "prettier": "^2.3.2",
+    "prettier-plugin-solidity": "^1.0.0-beta.17",
+    "solc-0.8.4": "npm:solc@0.8.4",
+    "solhint": "^3.3.6",
+    "solhint-plugin-prettier": "0.0.5",
+    "truffle-plugin-verify": "^0.5.12"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/solangegueiros/brz-token-bridge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/solangegueiros/brz-token-bridge/issues"
   }
 }

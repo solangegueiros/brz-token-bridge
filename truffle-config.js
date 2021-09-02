@@ -6,6 +6,7 @@ const HDWalletProvider = require('@truffle/hdwallet-provider');
 const mnemonic = process.env.MNEMONIC
 const infuraKey = process.env.INFURA_KEY
 const etherscanKey = process.env.ETHERSCAN_KEY
+const bscscanKey = process.env.BSCSCAN_KEY
 
 //Update gas price Testnet
 /* Run this first, to use the result in truffle-config:
@@ -48,6 +49,21 @@ module.exports = {
       network_id: "*",
       //gas: 8000000,
     },
+    bscTestnet: {
+      provider: () => new HDWalletProvider(mnemonic, `https://data-seed-prebsc-1-s1.binance.org:8545`, 0, 10),
+      network_id: 97,
+      confirmations: 5,
+      timeoutBlocks: 200,
+      networkCheckTimeout: 1e6, //1h = 36e5
+      skipDryRun: true,
+      production: true    // Treats this network as if it was a public net. (default: false)
+    },
+    goerli: {
+      provider: () => new HDWalletProvider(mnemonic, 'https://rpc.goerli.mudit.blog/', 0, 10),      
+      network_id: 5,
+      networkCheckTimeout: 1e6, //1h = 36e5,
+      skipDryRun: true
+    },        
     rinkeby: {
       provider: () => new HDWalletProvider({
         mnemonic: { phrase: mnemonic },
@@ -58,11 +74,6 @@ module.exports = {
       networkCheckTimeout: 1e6, //1h = 36e5
       //timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
       skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
-    },
-    goerli: {
-      provider: () => new HDWalletProvider(mnemonic, 'https://rpc.goerli.mudit.blog/', 0, 10),      
-      network_id: 5,
-      networkCheckTimeout: 1e6, //1h = 36e5
     },
     rskTestnet: { //Testnet RSK with dPathEthereum = metamask addresses
       //https://www.npmjs.com/package/@truffle/hdwallet-provider
@@ -81,34 +92,35 @@ module.exports = {
       // during deployment
       deploymentPollingInterval: 20e3,  //15s = 15e3, default is 4e3
       timeoutBlocks: 200,
-    },
-    rskTestnetAddress: { //Testnet RSK with dPathRSK = nifty addresses
-      provider: () => new HDWalletProvider(mnemonic, 'https://public-node.testnet.rsk.co', 0, 10, true, "m/44'/37310'/0'/0/"),
-      network_id: 31,
-      gasPrice: Math.floor(minimumGasPriceTestnet * 1.3),
-      networkCheckTimeout: 1e6,
-      timeoutBlocks: 100,
-      deploymentPollingInterval: 15e3,      
-    },
+      skipDryRun: true
+    }
   },
 
   // Set default mocha options here, use special reporters etc.
   mocha: {
-    // timeout: 100000
+    //reporter: 'eth-gas-reporter',
+    //enableTimeouts: false,
+    //before_timeout: 600000, // <--- units in ms
+    timeout: 600000,         //1s = 1000, 1min = 60000, 10min = 600000, 30min = 1800000
   },
 
   // Configure your compilers
   compilers: {
     solc: {
       version: "0.8.4",
+      optimizer: {
+        enabled: false
+      },      
     }
-  },
-
-  api_keys: {
-    etherscan: etherscanKey
   },
 
   plugins: [
     'truffle-plugin-verify'
-  ]
+  ],
+
+  api_keys: {
+    bscscan: bscscanKey,
+    etherscan: etherscanKey
+  }
+
 };
