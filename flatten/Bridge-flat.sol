@@ -145,7 +145,7 @@ abstract contract ERC165 is IERC165 {
   {
     return interfaceId == type(IERC165).interfaceId;
   }
-}}
+}
 
 // File: contracts\ozeppelin\access\AccessControl.sol
 

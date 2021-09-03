@@ -52,7 +52,7 @@ module.exports = {
     bscTestnet: {
       provider: () => new HDWalletProvider(mnemonic, `https://data-seed-prebsc-1-s1.binance.org:8545`, 0, 10),
       network_id: 97,
-      confirmations: 5,
+      confirmations: 2,
       timeoutBlocks: 200,
       networkCheckTimeout: 1e6, //1h = 36e5
       skipDryRun: true,
@@ -67,12 +67,15 @@ module.exports = {
     rinkeby: {
       provider: () => new HDWalletProvider({
         mnemonic: { phrase: mnemonic },
-        providerOrUrl: `https://rinkeby.infura.io/v3/` + infuraKey
+        providerOrUrl: `https://rinkeby.infura.io/v3/` + infuraKey,
+        numberOfAddresses: 10,
+        pollingInterval: 15e3
       }),
       network_id: 4,
       confirmations: 2,    // # of confs to wait between deployments. (default: 0)
       networkCheckTimeout: 1e6, //1h = 36e5
-      //timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
+      deploymentPollingInterval: 15e3,  //15s = 15e3, default is 4e3
+      timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
       skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
     },
     rskTestnet: { //Testnet RSK with dPathEthereum = metamask addresses

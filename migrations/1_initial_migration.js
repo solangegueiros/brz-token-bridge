@@ -71,5 +71,6 @@ module.exports = async (deployer, network, accounts)=> {
 
   console.log("\n addMonitor");
   await bridge.addMonitor(MonitorAddress, {from: accounts[0]});
+  console.log("\n\n");
 
 };
