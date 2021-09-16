@@ -13,6 +13,15 @@ Tech process:
 
 - See docs folder
 
+## Deployed contracts
+
+- BSC Testnet
+
+- Rinkeby
+
+- RSK Testnet
+
+
 ## Using locally
 
 ```shell
