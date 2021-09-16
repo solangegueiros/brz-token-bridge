@@ -5,7 +5,7 @@
 
 
 
-### `version() → string` (external)
+### `getBalanceToClaim(address account) → uint256` (external)
 
 
 
@@ -17,25 +17,43 @@
 
 
 
-### `getTotalFeeReceivedBridge() → uint256` (external)
-
-
-
-
-
 ### `getTokenBalance() → uint256` (external)
 
 
 
 
 
-### `receiveTokens(uint256 amount, uint256[2] transactionFee, string toBlockchain, string toAddress) → bool` (external)
+### `getTotalToClaim() → uint256` (external)
+
+
+
+
+
+### `getTotalFeeReceivedBridge() → uint256` (external)
+
+
+
+
+
+### `version() → string` (external)
+
+
+
+
+
+### `receiveTokens(uint256 amount, string toBlockchain, string toAddress) → bool` (external)
 
 
 
 
 
 ### `acceptTransfer(address receiver, uint256 amount, string sender, string fromBlockchain, bytes32[2] hashes, uint32 logIndex) → bool` (external)
+
+
+
+
+
+### `claim() → uint256` (external)
 
 
 
@@ -60,7 +78,13 @@
 
 
 
-### `CrossRequest(address from, uint256 amount, uint256 toFee, string toAddress, string toBlockchain)`
+### `CrossRequest(address from, uint256 amount, string toAddress, string toBlockchain)`
+
+
+
+
+
+### `CrossAccepted(address receiver, uint256 amount, string sender, string fromBlockchain, bytes32[2] hashes, uint32 logIndex)`
 
 
 

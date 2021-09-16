@@ -11,7 +11,6 @@ pragma solidity 0.8.4;
 // SafeMath.sol :       https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.1.0/contracts/utils/math/SafeMath.sol
 import "./ozeppelin/access/AccessControl.sol";
 import "./ozeppelin/security/Pausable.sol";
-import "./ozeppelin/utils/math/SafeMath.sol";
 import "./IBridge.sol";
 
 /**
@@ -28,8 +27,6 @@ import "./IBridge.sol";
  *
  */
 contract Bridge is AccessControl, IBridge, Pausable {
-  using SafeMath for uint256;
-
   address private constant ZERO_ADDRESS = address(0);
   bytes32 private constant NULL_HASH = bytes32(0);
   bytes32 public constant MONITOR_ROLE = keccak256("MONITOR_ROLE");
@@ -39,6 +36,9 @@ contract Bridge is AccessControl, IBridge, Pausable {
    * 100.00 = percentage accuracy (2) to 100%
    */
   uint256 public constant DECIMALPERCENT = 10000;
+
+  mapping(address => uint256) private balances; // Internal balances of address which needs to claim tokens crossed.
+  uint256 private totalToClaim; // locked value in bridge. The bridge's token balance can never be less than the totalToClaim.
 
   IERC20 public token;
   uint256 private totalFeeReceivedBridge; //fee received per Bridge, not for transaction in other blockchain
@@ -133,28 +133,14 @@ contract Bridge is AccessControl, IBridge, Pausable {
    *
    * Parameters:
    * - amount - gross amount of tokens to be crossed.
-   * - The Bridge fee will be deducted from this amount.
-   * - transactionFee - array with the fees:
-   *   - transactionFee[0] - fee in BRL - this fee will be added to amount transfered from caller's account.
-   *   - transactionFee[1] - fee in destiny currency(minor unit) - this information will be
-   * used in the destination Blockchain,
-   * by the monitor who will create the transaction and send using this fee defined here.
    * - toBlockchain - the amount will be sent to this blockchain.
    * - toAddress - the amount will be sent to this address. It can be diferent from caller's address.
    * This is a string because some blockchain could not have the same pattern from Etherem / RSK / BSC.
    *
    * Returns: bool - true if it is sucessful.
    *
-   * #### More info about fees
-   *
-   * - Blockchain / transaction fee in BRL - it will be transfered from user's account,
-   * along with the amount he would like to receive in the account.
-   * This will be spent in `toBlockchain`.
-   * Does not depend of amount, but of destination blockchain.
-   *
-   * - Bridge Fee - it is deducted from the requested amount.
+   * Bridge Fee: it is deducted from the requested amount.
    * It is a percentage of the requested amount.
-   * Cannot include the transaction fee in order to be calculated.
    *
    * > Before call this function, the caller MUST have called function `approve` in BRZ token,
    * > allowing the bridge's smart contract address to use the BRZ tokens,
@@ -171,15 +157,13 @@ contract Bridge is AccessControl, IBridge, Pausable {
    * - amount greater than zero.
    *
    * Actions:
-   * - add the blockchain fee in BRZ to amount in BRZ, in totalAmount.
    * - calculate bridge's fee using the original amount to be sent.
    * - discount bridge's fee from the original amount, in amountMinusFees.
    * - add bridge's fee to `totalFeeReceivedBridge`, a variable to store all the fees received by the bridge.
-   * - BRZ transfer totalAmount from the caller's address to bridge address.
+   * - BRZ transfer amount from the caller's address to bridge address.
    * - emit `CrossRequest` event, with the parameters:
    *   - from - address of the caller's function.
    *   - amount - the net amount to be transfered in the destination blockchain.
-   *   - toFee - the fee which must be used to send the transfer transaction in the destination blockchain.
    *   - toAddress - string representing the address which will receive the tokens.
    *   - toBlockchain - the destination blockchain.
    *
@@ -190,7 +174,6 @@ contract Bridge is AccessControl, IBridge, Pausable {
    */
   function receiveTokens(
     uint256 amount,
-    uint256[2] memory transactionFee,
     string memory toBlockchain,
     string memory toAddress
   ) external override whenNotPaused returns (bool) {
@@ -198,25 +181,16 @@ contract Bridge is AccessControl, IBridge, Pausable {
     require(!compareStrings(toAddress, ""), "Bridge: toAddress is null");
     require(amount > 0, "Bridge: amount is 0");
 
-    //The total amount is the amount desired plus the blockchain fee to destination, in the token unit
-    uint256 totalAmount = amount.add(transactionFee[0]);
-
-    //Bridge Fee
-    uint256 bridgeFee = amount.mul(feePercentageBridge).div(DECIMALPERCENT);
-    uint256 amountMinusFees = amount.sub(bridgeFee);
-    totalFeeReceivedBridge = totalFeeReceivedBridge.add(bridgeFee);
+    //Bridge fee or service fee
+    uint256 bridgeFee = (amount * feePercentageBridge) / DECIMALPERCENT;
+    uint256 amountMinusFees = amount - bridgeFee;
+    totalFeeReceivedBridge += bridgeFee;
 
     //This is the message for Monitor off-chain manage the transaction and send the tokens on the other Blockchain
-    emit CrossRequest(
-      _msgSender(),
-      amountMinusFees,
-      transactionFee[1],
-      toAddress,
-      toBlockchain
-    );
+    emit CrossRequest(_msgSender(), amountMinusFees, toAddress, toBlockchain);
 
     //Transfer the tokens on IERC20, they should be already approved for the bridge Address to use them
-    token.transferFrom(_msgSender(), address(this), totalAmount);
+    token.transferFrom(_msgSender(), address(this), amount);
     return true;
   }
 
@@ -281,7 +255,13 @@ contract Bridge is AccessControl, IBridge, Pausable {
   }
 
   /**
-   * @dev This function transfer token from bridge to destionation address
+   * @dev This function transfer tokens from the the internal balance of bridge smart contract
+   * to the internal balance of the destination address.
+   *
+   * The token.balanceOf(bridgeAddress) must always be greather than or equal the total amount to be claimed by users,
+   * as there may be tokens not yet claimed.
+   *
+   * Can not be called if the Bridge is paused.
    *
    * > Only monitor can call it!
    *
@@ -292,17 +272,24 @@ contract Bridge is AccessControl, IBridge, Pausable {
     whenNotPaused
     returns (bool)
   {
-    require(
-      token.balanceOf(address(this)) >= amount,
-      "Bridge: insufficient balance"
-    );
-    token.transfer(to, amount);
+    uint256 bridgeBalance = token.balanceOf(address(this));
+    totalToClaim += amount;
+    require(bridgeBalance >= totalToClaim, "Bridge: insufficient balance");
+
+    balances[to] += amount;
     return true;
   }
 
   /**
    * @dev This function accept the cross of token,
-   * which means it is called in the destination blockchain, who will send the tokens accepted to be crossed.
+   * which means it is called in the destination blockchain,
+   * who will send the tokens accepted to be crossed
+   * to the internal balance of the destination address.
+   *
+   * After this the balance will be available for the destination address claims it.
+   *
+   * In this way, an address can send tokens many times, calling the fucntion receiveTokens,
+   * but can receive the total amount in one single transaction, saving gas fees.
    *
    * > Only monitor can call it!
    *
@@ -357,7 +344,135 @@ contract Bridge is AccessControl, IBridge, Pausable {
     require(hashes[1] != NULL_HASH, "Bridge: transactionHash is null");
 
     _processTransaction(hashes, receiver, amount, logIndex);
+
+    emit CrossAccepted(
+      receiver,
+      amount,
+      sender,
+      fromBlockchain,
+      hashes,
+      logIndex
+    );
+
     _sendToken(receiver, amount);
+    return true;
+  }
+
+  /**
+   * @dev This function transfer tokens from bridge to destination address,
+   * who must be the address who called the function.
+   *
+   * When the monitor accept a transfer, it will call the function acceptTransfer,
+   * which will internaly transfer the tokens crossed to the destination address,
+   * updating the internal destination's balance.
+   *
+   * After this, the balance will be available for the destination address claims it,
+   * using the function `claim()`.
+   *
+   * > Any account / person can call it!
+   *
+   * It must have the internal destination's balance greather then zero.
+   *
+   * Can be called even if the Bridge is paused,
+   * because can happens a problem and it is necessary to withdraw tokens,
+   * maybe to create a new version of bridge, for example.
+   *
+   */
+  function claim() external override returns (uint256 receivedAmount) {
+    uint256 amount = balances[_msgSender()];
+    require(amount > 0, "Bridge: no balance to claim");
+
+    balances[_msgSender()] -= amount;
+    totalToClaim -= amount;
+    token.transfer(_msgSender(), amount);
+    return amount;
+  }
+
+  /**
+   * @dev Returns total of fees received by bridge.
+   *
+   * Parameters: none
+   *
+   * Returns: integer
+   *
+   */
+  function getTotalFeeReceivedBridge()
+    external
+    view
+    override
+    returns (uint256)
+  {
+    return totalFeeReceivedBridge;
+  }
+
+  /**
+   * @dev Returns the token's amount available to claim by an account.
+   *
+   * Parameters: address of an account.
+   *
+   * Returns: integer amount of tokens available to claim in bridge.
+   *
+   */
+  function getBalanceToClaim(address account)
+    external
+    view
+    override
+    returns (uint256)
+  {
+    return balances[account];
+  }
+
+  /**
+   * @dev Returns token balance in bridge.
+   *
+   * Parameters: none
+   *
+   * Returns: integer amount of tokens in bridge
+   *
+   */
+  function getTokenBalance() external view override returns (uint256) {
+    return token.balanceOf(address(this));
+  }
+
+  /**
+   * @dev Returns the token balance locked in the bridge.
+   * The bridge's token balance can never be less than the totalToClaim.
+   *
+   * Parameters: none.
+   *
+   * Returns: integer amount of tokens locked.
+   *
+   */
+  function getTotalToClaim() external view override returns (uint256) {
+    return totalToClaim;
+  }
+
+  /**
+   * @dev Withdraw tokens from bridge
+   *
+   * Only owner can call it.
+   *
+   * Can be called even if the Bridge is paused,
+   * because can happens a problem and it is necessary to withdraw tokens,
+   * maybe to create a new version of bridge, for example.
+   *
+   * The tokens only can be sent to the caller's function.
+   *
+   * Parameters: integer amount of tokens
+   *
+   * Returns: true if it is successful
+   *
+   * Requirements:
+   * - The amount of unclaimed tokens must be in the bridge.
+   * - amount to withdraw <= bridge's balance minus total to claim.
+   *
+   */
+  function withdrawToken(uint256 amount) external onlyOwner returns (bool) {
+    uint256 bridgeBalance = token.balanceOf(address(this));
+    uint256 availableToWithdraw = bridgeBalance - totalToClaim;
+    require(amount <= availableToWithdraw, "Bridge: insufficient balance");
+
+    token.transfer(_msgSender(), amount);
     return true;
   }
 
@@ -476,63 +591,6 @@ contract Bridge is AccessControl, IBridge, Pausable {
     require(tokenAddress != ZERO_ADDRESS, "Bridge: zero address");
     emit TokenChanged(tokenAddress);
     token = IERC20(tokenAddress);
-    return true;
-  }
-
-  /**
-   * @dev Returns total of fees received by bridge.
-   *
-   * Parameters: none
-   *
-   * Returns: integer
-   *
-   */
-  function getTotalFeeReceivedBridge()
-    external
-    view
-    override
-    returns (uint256)
-  {
-    return totalFeeReceivedBridge;
-  }
-
-  /**
-   * @dev Returns token balance in bridge.
-   *
-   * Parameters: none
-   *
-   * Returns: integer amount of tokens in bridge
-   *
-   */
-  function getTokenBalance() external view override returns (uint256) {
-    return token.balanceOf(address(this));
-  }
-
-  /**
-   * @dev Withdraw tokens from bridge
-   *
-   * Only owner can call it.
-   *
-   * Can be called even if the Bridge is paused,
-   * because can happens a problem and it is necessary to withdraw tokens,
-   * maybe to create a new version of bridge, for example.
-   *
-   * The tokens only can be sent to the caller's function.
-   *
-   * Parameters: integer amount of tokens
-   *
-   * Returns: true if it is successful
-   *
-   * Requirements:
-   * - amount less or equal balance of tokens in bridge.
-   *
-   */
-  function withdrawToken(uint256 amount) external onlyOwner returns (bool) {
-    require(
-      amount <= token.balanceOf(address(this)),
-      "Bridge: insuficient balance"
-    );
-    token.transfer(_msgSender(), amount);
     return true;
   }
 
@@ -659,19 +717,18 @@ contract Bridge is AccessControl, IBridge, Pausable {
   }
 
   /**
-  * @dev This function unpauses the bridge.
-  *
-  * Only owner can call it.
-  * 
-  * Parameters: none
-  *
-  * Returns: none
-  *
-  * Requirements:
-  *
-  * - The contract must be paused.
-  &  
-  */
+   * @dev This function unpauses the bridge.
+   *
+   * Only owner can call it.
+   *
+   * Parameters: none
+   *
+   * Returns: none
+   *
+   * Requirements:
+   *
+   * - The contract must be paused.
+   */
   function unpause() external onlyOwner {
     /**
      * @dev See {Pausable-_unpause}.

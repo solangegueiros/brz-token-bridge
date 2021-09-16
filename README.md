@@ -1,14 +1,23 @@
 # brz-token-bridge
 
-This version contains the version 0.2.0, with fees logic inside smart contract.
+The token bridge provides the logic for transfer BRZ token between blockchains.
 
-```shell
-npm install
-```
+Tech process:
+- An account call the function `receiveTokens` in blockchain **A** sendin tokens.
+- An external monitor follow the event `CrossRequest`.
+- Wait `N` confirmations of a receiveTokens's transaction.
+- The external monitor calls the function `acceptTransfer` to send tokens to the account's internal balance.
+- The account will calls the function `claim` to send the tokens to its address.
 
 ## Bridge.sol documentation
 
 - See docs folder
+
+## Using locally
+
+```shell
+npm install
+```
 
 ## Running tests
 

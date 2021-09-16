@@ -57,6 +57,20 @@ contract('Bridge', accounts => {
       assert.equal(response, 0, "getTotalFeeReceivedBridge is NOT zero");
     });
 
+    it('getTokenBalance is zero', async () => {
+      const response = await bridge.getTokenBalance({from: anyAccount});
+      assert.equal(response, 0, "getTokenBalance is NOT zero");
+    });
+
+    it('getTotalToClaim is zero', async () => {
+      const response = await bridge.getTotalToClaim({from: anyAccount});
+      assert.equal(response, 0, "getTotalToClaim is NOT zero");
+    });
+
+    it('internal token balance to claim of an account is zero', async () => {
+      const response = await bridge.getBalanceToClaim(anyAccount, {from: anyAccount});
+      assert.equal(response, 0, "getBalanceToClaim is NOT zero");
+    });
   });
 
   describe('Blockchains', () => {

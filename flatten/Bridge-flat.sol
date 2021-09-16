@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: MIT
-pragma solidity 0.8.4;
-
 // File: contracts\ozeppelin\utils\Context.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
 
 /*
  * @dev Provides information about the current execution context, including the
@@ -25,6 +26,10 @@ abstract contract Context {
 }
 
 // File: contracts\ozeppelin\utils\Strings.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
 
 /**
  * @dev String operations.
@@ -95,6 +100,10 @@ library Strings {
 
 // File: contracts\ozeppelin\utils\introspection\IERC165.sol
 
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
 /**
  * @dev Interface of the ERC165 standard, as defined in the
  * https://eips.ethereum.org/EIPS/eip-165[EIP].
@@ -117,6 +126,11 @@ interface IERC165 {
 }
 
 // File: contracts\ozeppelin\utils\introspection\ERC165.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
 
 /**
  * @dev Implementation of the {IERC165} interface.
@@ -148,6 +162,13 @@ abstract contract ERC165 is IERC165 {
 }
 
 // File: contracts\ozeppelin\access\AccessControl.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
+
+
 
 /**
  * @dev External interface of AccessControl declared to support ERC165 detection.
@@ -430,92 +451,12 @@ abstract contract AccessControl is Context, IAccessControl, ERC165 {
   }
 }
 
-
-// File: contracts\ozeppelin\token\ERC20\IERC20.sol
-
-/**
- * @dev Interface of the ERC20 standard as defined in the EIP.
- */
-interface IERC20 {
-  /**
-   * @dev Returns the amount of tokens in existence.
-   */
-  function totalSupply() external view returns (uint256);
-
-  /**
-   * @dev Returns the amount of tokens owned by `account`.
-   */
-  function balanceOf(address account) external view returns (uint256);
-
-  /**
-   * @dev Moves `amount` tokens from the caller's account to `recipient`.
-   *
-   * Returns a boolean value indicating whether the operation succeeded.
-   *
-   * Emits a {Transfer} event.
-   */
-  function transfer(address recipient, uint256 amount) external returns (bool);
-
-  /**
-   * @dev Returns the remaining number of tokens that `spender` will be
-   * allowed to spend on behalf of `owner` through {transferFrom}. This is
-   * zero by default.
-   *
-   * This value changes when {approve} or {transferFrom} are called.
-   */
-  function allowance(address owner, address spender)
-    external
-    view
-    returns (uint256);
-
-  /**
-   * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
-   *
-   * Returns a boolean value indicating whether the operation succeeded.
-   *
-   * IMPORTANT: Beware that changing an allowance with this method brings the risk
-   * that someone may use both the old and the new allowance by unfortunate
-   * transaction ordering. One possible solution to mitigate this race
-   * condition is to first reduce the spender's allowance to 0 and set the
-   * desired value afterwards:
-   * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
-   *
-   * Emits an {Approval} event.
-   */
-  function approve(address spender, uint256 amount) external returns (bool);
-
-  /**
-   * @dev Moves `amount` tokens from `sender` to `recipient` using the
-   * allowance mechanism. `amount` is then deducted from the caller's
-   * allowance.
-   *
-   * Returns a boolean value indicating whether the operation succeeded.
-   *
-   * Emits a {Transfer} event.
-   */
-  function transferFrom(
-    address sender,
-    address recipient,
-    uint256 amount
-  ) external returns (bool);
-
-  /**
-   * @dev Emitted when `value` tokens are moved from one account (`from`) to
-   * another (`to`).
-   *
-   * Note that `value` may be zero.
-   */
-  event Transfer(address indexed from, address indexed to, uint256 value);
-
-  /**
-   * @dev Emitted when the allowance of a `spender` for an `owner` is set by
-   * a call to {approve}. `value` is the new allowance.
-   */
-  event Approval(address indexed owner, address indexed spender, uint256 value);
-}
-
-
 // File: contracts\ozeppelin\security\Pausable.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
 
 /**
  * @dev Contract module which allows children to implement an emergency stop
@@ -602,253 +543,117 @@ abstract contract Pausable is Context {
   }
 }
 
+// File: contracts\ozeppelin\token\ERC20\IERC20.sol
 
-// File: contracts\ozeppelin\utils\math\SafeMath.sol
+// SPDX-License-Identifier: MIT
 
-// CAUTION
-// This version of SafeMath should only be used with Solidity 0.8 or later,
-// because it relies on the compiler's built in overflow checks.
+pragma solidity ^0.8.0;
 
 /**
- * @dev Wrappers over Solidity's arithmetic operations.
- *
- * NOTE: `SafeMath` is no longer needed starting with Solidity 0.8. The compiler
- * now has built in overflow checking.
+ * @dev Interface of the ERC20 standard as defined in the EIP.
  */
-library SafeMath {
+interface IERC20 {
   /**
-   * @dev Returns the addition of two unsigned integers, with an overflow flag.
-   *
-   * _Available since v3.4._
+   * @dev Returns the amount of tokens in existence.
    */
-  function tryAdd(uint256 a, uint256 b) internal pure returns (bool, uint256) {
-    unchecked {
-      uint256 c = a + b;
-      if (c < a) return (false, 0);
-      return (true, c);
-    }
-  }
+  function totalSupply() external view returns (uint256);
 
   /**
-   * @dev Returns the substraction of two unsigned integers, with an overflow flag.
-   *
-   * _Available since v3.4._
+   * @dev Returns the amount of tokens owned by `account`.
    */
-  function trySub(uint256 a, uint256 b) internal pure returns (bool, uint256) {
-    unchecked {
-      if (b > a) return (false, 0);
-      return (true, a - b);
-    }
-  }
+  function balanceOf(address account) external view returns (uint256);
 
   /**
-   * @dev Returns the multiplication of two unsigned integers, with an overflow flag.
+   * @dev Moves `amount` tokens from the caller's account to `recipient`.
    *
-   * _Available since v3.4._
+   * Returns a boolean value indicating whether the operation succeeded.
+   *
+   * Emits a {Transfer} event.
    */
-  function tryMul(uint256 a, uint256 b) internal pure returns (bool, uint256) {
-    unchecked {
-      // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
-      // benefit is lost if 'b' is also tested.
-      // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522
-      if (a == 0) return (true, 0);
-      uint256 c = a * b;
-      if (c / a != b) return (false, 0);
-      return (true, c);
-    }
-  }
+  function transfer(address recipient, uint256 amount) external returns (bool);
 
   /**
-   * @dev Returns the division of two unsigned integers, with a division by zero flag.
+   * @dev Returns the remaining number of tokens that `spender` will be
+   * allowed to spend on behalf of `owner` through {transferFrom}. This is
+   * zero by default.
    *
-   * _Available since v3.4._
+   * This value changes when {approve} or {transferFrom} are called.
    */
-  function tryDiv(uint256 a, uint256 b) internal pure returns (bool, uint256) {
-    unchecked {
-      if (b == 0) return (false, 0);
-      return (true, a / b);
-    }
-  }
+  function allowance(address owner, address spender)
+    external
+    view
+    returns (uint256);
 
   /**
-   * @dev Returns the remainder of dividing two unsigned integers, with a division by zero flag.
+   * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
    *
-   * _Available since v3.4._
+   * Returns a boolean value indicating whether the operation succeeded.
+   *
+   * IMPORTANT: Beware that changing an allowance with this method brings the risk
+   * that someone may use both the old and the new allowance by unfortunate
+   * transaction ordering. One possible solution to mitigate this race
+   * condition is to first reduce the spender's allowance to 0 and set the
+   * desired value afterwards:
+   * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
+   *
+   * Emits an {Approval} event.
    */
-  function tryMod(uint256 a, uint256 b) internal pure returns (bool, uint256) {
-    unchecked {
-      if (b == 0) return (false, 0);
-      return (true, a % b);
-    }
-  }
+  function approve(address spender, uint256 amount) external returns (bool);
 
   /**
-   * @dev Returns the addition of two unsigned integers, reverting on
-   * overflow.
+   * @dev Moves `amount` tokens from `sender` to `recipient` using the
+   * allowance mechanism. `amount` is then deducted from the caller's
+   * allowance.
    *
-   * Counterpart to Solidity's `+` operator.
+   * Returns a boolean value indicating whether the operation succeeded.
    *
-   * Requirements:
-   *
-   * - Addition cannot overflow.
+   * Emits a {Transfer} event.
    */
-  function add(uint256 a, uint256 b) internal pure returns (uint256) {
-    return a + b;
-  }
+  function transferFrom(
+    address sender,
+    address recipient,
+    uint256 amount
+  ) external returns (bool);
 
   /**
-   * @dev Returns the subtraction of two unsigned integers, reverting on
-   * overflow (when the result is negative).
+   * @dev Emitted when `value` tokens are moved from one account (`from`) to
+   * another (`to`).
    *
-   * Counterpart to Solidity's `-` operator.
-   *
-   * Requirements:
-   *
-   * - Subtraction cannot overflow.
+   * Note that `value` may be zero.
    */
-  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-    return a - b;
-  }
+  event Transfer(address indexed from, address indexed to, uint256 value);
 
   /**
-   * @dev Returns the multiplication of two unsigned integers, reverting on
-   * overflow.
-   *
-   * Counterpart to Solidity's `*` operator.
-   *
-   * Requirements:
-   *
-   * - Multiplication cannot overflow.
+   * @dev Emitted when the allowance of a `spender` for an `owner` is set by
+   * a call to {approve}. `value` is the new allowance.
    */
-  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
-    return a * b;
-  }
-
-  /**
-   * @dev Returns the integer division of two unsigned integers, reverting on
-   * division by zero. The result is rounded towards zero.
-   *
-   * Counterpart to Solidity's `/` operator.
-   *
-   * Requirements:
-   *
-   * - The divisor cannot be zero.
-   */
-  function div(uint256 a, uint256 b) internal pure returns (uint256) {
-    return a / b;
-  }
-
-  /**
-   * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),
-   * reverting when dividing by zero.
-   *
-   * Counterpart to Solidity's `%` operator. This function uses a `revert`
-   * opcode (which leaves remaining gas untouched) while Solidity uses an
-   * invalid opcode to revert (consuming all remaining gas).
-   *
-   * Requirements:
-   *
-   * - The divisor cannot be zero.
-   */
-  function mod(uint256 a, uint256 b) internal pure returns (uint256) {
-    return a % b;
-  }
-
-  /**
-   * @dev Returns the subtraction of two unsigned integers, reverting with custom message on
-   * overflow (when the result is negative).
-   *
-   * CAUTION: This function is deprecated because it requires allocating memory for the error
-   * message unnecessarily. For custom revert reasons use {trySub}.
-   *
-   * Counterpart to Solidity's `-` operator.
-   *
-   * Requirements:
-   *
-   * - Subtraction cannot overflow.
-   */
-  function sub(
-    uint256 a,
-    uint256 b,
-    string memory errorMessage
-  ) internal pure returns (uint256) {
-    unchecked {
-      require(b <= a, errorMessage);
-      return a - b;
-    }
-  }
-
-  /**
-   * @dev Returns the integer division of two unsigned integers, reverting with custom message on
-   * division by zero. The result is rounded towards zero.
-   *
-   * Counterpart to Solidity's `%` operator. This function uses a `revert`
-   * opcode (which leaves remaining gas untouched) while Solidity uses an
-   * invalid opcode to revert (consuming all remaining gas).
-   *
-   * Counterpart to Solidity's `/` operator. Note: this function uses a
-   * `revert` opcode (which leaves remaining gas untouched) while Solidity
-   * uses an invalid opcode to revert (consuming all remaining gas).
-   *
-   * Requirements:
-   *
-   * - The divisor cannot be zero.
-   */
-  function div(
-    uint256 a,
-    uint256 b,
-    string memory errorMessage
-  ) internal pure returns (uint256) {
-    unchecked {
-      require(b > 0, errorMessage);
-      return a / b;
-    }
-  }
-
-  /**
-   * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),
-   * reverting with custom message when dividing by zero.
-   *
-   * CAUTION: This function is deprecated because it requires allocating memory for the error
-   * message unnecessarily. For custom revert reasons use {tryMod}.
-   *
-   * Counterpart to Solidity's `%` operator. This function uses a `revert`
-   * opcode (which leaves remaining gas untouched) while Solidity uses an
-   * invalid opcode to revert (consuming all remaining gas).
-   *
-   * Requirements:
-   *
-   * - The divisor cannot be zero.
-   */
-  function mod(
-    uint256 a,
-    uint256 b,
-    string memory errorMessage
-  ) internal pure returns (uint256) {
-    unchecked {
-      require(b > 0, errorMessage);
-      return a % b;
-    }
-  }
+  event Approval(address indexed owner, address indexed spender, uint256 value);
 }
-
 
 // File: contracts\IBridge.sol
 
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
+// IERC20.sol :  https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.1.0/contracts/token/ERC20/IERC20.sol
+
+
 interface IBridge {
-  function version() external pure returns (string memory);
+
+  function getBalanceToClaim(address account) external view returns (uint256);
 
   function getFeePercentageBridge() external view returns (uint256);
 
+  function getTokenBalance() external view returns (uint256);
+
+  function getTotalToClaim() external view returns (uint256);
+
   function getTotalFeeReceivedBridge() external view returns (uint256);
 
-  function getTokenBalance() external view returns (uint256);
+  function version() external pure returns (string memory);
 
   function receiveTokens(
     uint256 amount,
-    uint256[2] calldata transactionFee,
     string calldata toBlockchain,
     string calldata toAddress
   ) external returns (bool);
@@ -861,6 +666,8 @@ interface IBridge {
     bytes32[2] calldata hashes, //blockHash, transactionHash
     uint32 logIndex
   ) external returns (bool);
+
+  function claim() external returns (uint256);
 
   function getTransactionId(
     bytes32[2] calldata hashes, //blockHash, transactionHash
@@ -876,17 +683,27 @@ interface IBridge {
   event CrossRequest(
     address from,
     uint256 amount,
-    uint256 toFee,
     string toAddress,
     string toBlockchain
   );
+
+  //hashes[2] = [blockHash, transactionHash]
+  event CrossAccepted(
+    address receiver,
+    uint256 amount,
+    string sender,
+    string fromBlockchain,
+    bytes32[2] hashes,
+    uint32 logIndex    
+  );
+
   event FeePercentageBridgeChanged(uint256 oldFee, uint256 newFee);
   event TokenChanged(address tokenAddress);
 }
 
-
 // File: contracts\Bridge.sol
 
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 /// @title BRZ token Bridge
@@ -897,6 +714,9 @@ pragma solidity 0.8.4;
 // AccessControl.sol :  https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.1.0/contracts/access/AccessControl.sol
 // Pausable.sol :       https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.1.0/contracts/security/Pausable.sol
 // SafeMath.sol :       https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.1.0/contracts/utils/math/SafeMath.sol
+
+
+
 
 /**
  * @dev BRZ token Bridge
@@ -912,7 +732,6 @@ pragma solidity 0.8.4;
  *
  */
 contract Bridge is AccessControl, IBridge, Pausable {
-  using SafeMath for uint256;
 
   address private constant ZERO_ADDRESS = address(0);
   bytes32 private constant NULL_HASH = bytes32(0);
@@ -923,6 +742,9 @@ contract Bridge is AccessControl, IBridge, Pausable {
    * 100.00 = percentage accuracy (2) to 100%
    */
   uint256 public constant DECIMALPERCENT = 10000;
+  
+  mapping(address => uint256) private balances;   // Internal balances of address which needs to claim tokens crossed.
+  uint256 private totalToClaim;                   // locked value in bridge. The bridge's token balance can never be less than the totalToClaim. 
 
   IERC20 public token;
   uint256 private totalFeeReceivedBridge; //fee received per Bridge, not for transaction in other blockchain
@@ -1017,28 +839,14 @@ contract Bridge is AccessControl, IBridge, Pausable {
    *
    * Parameters:
    * - amount - gross amount of tokens to be crossed.
-   * - The Bridge fee will be deducted from this amount.
-   * - transactionFee - array with the fees:
-   *   - transactionFee[0] - fee in BRL - this fee will be added to amount transfered from caller's account.
-   *   - transactionFee[1] - fee in destiny currency(minor unit) - this information will be
-   * used in the destination Blockchain,
-   * by the monitor who will create the transaction and send using this fee defined here.
    * - toBlockchain - the amount will be sent to this blockchain.
    * - toAddress - the amount will be sent to this address. It can be diferent from caller's address.
    * This is a string because some blockchain could not have the same pattern from Etherem / RSK / BSC.
    *
    * Returns: bool - true if it is sucessful.
    *
-   * #### More info about fees
-   *
-   * - Blockchain / transaction fee in BRL - it will be transfered from user's account,
-   * along with the amount he would like to receive in the account.
-   * This will be spent in `toBlockchain`.
-   * Does not depend of amount, but of destination blockchain.
-   *
-   * - Bridge Fee - it is deducted from the requested amount.
+   * Bridge Fee: it is deducted from the requested amount.
    * It is a percentage of the requested amount.
-   * Cannot include the transaction fee in order to be calculated.
    *
    * > Before call this function, the caller MUST have called function `approve` in BRZ token,
    * > allowing the bridge's smart contract address to use the BRZ tokens,
@@ -1055,15 +863,13 @@ contract Bridge is AccessControl, IBridge, Pausable {
    * - amount greater than zero.
    *
    * Actions:
-   * - add the blockchain fee in BRZ to amount in BRZ, in totalAmount.
    * - calculate bridge's fee using the original amount to be sent.
    * - discount bridge's fee from the original amount, in amountMinusFees.
    * - add bridge's fee to `totalFeeReceivedBridge`, a variable to store all the fees received by the bridge.
-   * - BRZ transfer totalAmount from the caller's address to bridge address.
+   * - BRZ transfer amount from the caller's address to bridge address.
    * - emit `CrossRequest` event, with the parameters:
    *   - from - address of the caller's function.
    *   - amount - the net amount to be transfered in the destination blockchain.
-   *   - toFee - the fee which must be used to send the transfer transaction in the destination blockchain.
    *   - toAddress - string representing the address which will receive the tokens.
    *   - toBlockchain - the destination blockchain.
    *
@@ -1074,7 +880,6 @@ contract Bridge is AccessControl, IBridge, Pausable {
    */
   function receiveTokens(
     uint256 amount,
-    uint256[2] memory transactionFee,
     string memory toBlockchain,
     string memory toAddress
   ) external override whenNotPaused returns (bool) {
@@ -1082,25 +887,21 @@ contract Bridge is AccessControl, IBridge, Pausable {
     require(!compareStrings(toAddress, ""), "Bridge: toAddress is null");
     require(amount > 0, "Bridge: amount is 0");
 
-    //The total amount is the amount desired plus the blockchain fee to destination, in the token unit
-    uint256 totalAmount = amount.add(transactionFee[0]);
-
-    //Bridge Fee
-    uint256 bridgeFee = amount.mul(feePercentageBridge).div(DECIMALPERCENT);
-    uint256 amountMinusFees = amount.sub(bridgeFee);
-    totalFeeReceivedBridge = totalFeeReceivedBridge.add(bridgeFee);
+    //Bridge fee or service fee
+    uint256 bridgeFee = amount * feePercentageBridge / DECIMALPERCENT;
+    uint256 amountMinusFees = amount - bridgeFee;
+    totalFeeReceivedBridge += bridgeFee;
 
     //This is the message for Monitor off-chain manage the transaction and send the tokens on the other Blockchain
     emit CrossRequest(
       _msgSender(),
       amountMinusFees,
-      transactionFee[1],
       toAddress,
       toBlockchain
     );
 
     //Transfer the tokens on IERC20, they should be already approved for the bridge Address to use them
-    token.transferFrom(_msgSender(), address(this), totalAmount);
+    token.transferFrom(_msgSender(), address(this), amount);
     return true;
   }
 
@@ -1165,7 +966,13 @@ contract Bridge is AccessControl, IBridge, Pausable {
   }
 
   /**
-   * @dev This function transfer token from bridge to destionation address
+   * @dev This function transfer tokens from the the internal balance of bridge smart contract
+   * to the internal balance of the destination address.
+   *
+   * The token.balanceOf(bridgeAddress) must always be greather than or equal the total amount to be claimed by users,
+   * as there may be tokens not yet claimed.
+   *
+   * Can not be called if the Bridge is paused.
    *
    * > Only monitor can call it!
    *
@@ -1176,17 +983,27 @@ contract Bridge is AccessControl, IBridge, Pausable {
     whenNotPaused
     returns (bool)
   {
+    uint256 bridgeBalance = token.balanceOf(address(this));
+    totalToClaim += amount;
     require(
-      token.balanceOf(address(this)) >= amount,
+      bridgeBalance >= totalToClaim,
       "Bridge: insufficient balance"
     );
-    token.transfer(to, amount);
+
+    balances[to] += amount;
     return true;
   }
 
   /**
    * @dev This function accept the cross of token,
-   * which means it is called in the destination blockchain, who will send the tokens accepted to be crossed.
+   * which means it is called in the destination blockchain, 
+   * who will send the tokens accepted to be crossed
+   * to the internal balance of the destination address.
+   *
+   * After this the balance will be available for the destination address claims it.
+   *
+   * In this way, an address can send tokens many times, calling the fucntion receiveTokens,
+   * but can receive the total amount in one single transaction, saving gas fees. 
    *
    * > Only monitor can call it!
    *
@@ -1241,7 +1058,133 @@ contract Bridge is AccessControl, IBridge, Pausable {
     require(hashes[1] != NULL_HASH, "Bridge: transactionHash is null");
 
     _processTransaction(hashes, receiver, amount, logIndex);
+
+    emit CrossAccepted(
+      receiver,
+      amount,
+      sender,
+      fromBlockchain,
+      hashes,
+      logIndex
+    );
+
     _sendToken(receiver, amount);
+    return true;
+  }
+
+  /**
+   * @dev This function transfer tokens from bridge to destination address, 
+   * who must be the address who called the function.
+   *
+   * When the monitor accept a transfer, it will call the function acceptTransfer,
+   * which will internaly transfer the tokens crossed to the destination address, 
+   * updating the internal destination's balance.
+   *
+   * After this, the balance will be available for the destination address claims it,
+   * using the function `claim()`.
+   *
+   * > Any account / person can call it!
+   *
+   * It must have the internal destination's balance greather then zero.
+   *
+   * Can be called even if the Bridge is paused,
+   * because can happens a problem and it is necessary to withdraw tokens,
+   * maybe to create a new version of bridge, for example.
+   *
+   */
+  function claim() external override returns (uint256 receivedAmount) {
+    uint256 amount = balances[_msgSender()];
+    require(amount > 0, "Bridge: no balance to claim");
+    
+    balances[_msgSender()] -= amount;
+    totalToClaim -= amount;
+    token.transfer(_msgSender(), amount);
+    return amount;
+  }
+
+  /**
+   * @dev Returns total of fees received by bridge.
+   *
+   * Parameters: none
+   *
+   * Returns: integer
+   *
+   */
+  function getTotalFeeReceivedBridge()
+    external
+    view
+    override
+    returns (uint256)
+  {
+    return totalFeeReceivedBridge;
+  }
+
+  /**
+   * @dev Returns the token's amount available to claim by an account.
+   *
+   * Parameters: address of an account.
+   *
+   * Returns: integer amount of tokens available to claim in bridge.
+   *
+   */
+  function getBalanceToClaim(address account) external view override returns (uint256) {
+    return balances[account];
+  }
+
+  /**
+   * @dev Returns token balance in bridge.
+   *
+   * Parameters: none
+   *
+   * Returns: integer amount of tokens in bridge
+   *
+   */
+  function getTokenBalance() external view override returns (uint256) {
+    return token.balanceOf(address(this));
+  }
+
+  /**
+   * @dev Returns the token balance locked in the bridge. 
+   * The bridge's token balance can never be less than the totalToClaim.
+   *
+   * Parameters: none.
+   *
+   * Returns: integer amount of tokens locked.
+   *
+   */
+  function getTotalToClaim() external view override returns (uint256) {
+    return totalToClaim;
+  }
+
+  /**
+   * @dev Withdraw tokens from bridge
+   *
+   * Only owner can call it.
+   *
+   * Can be called even if the Bridge is paused,
+   * because can happens a problem and it is necessary to withdraw tokens,
+   * maybe to create a new version of bridge, for example.
+   *
+   * The tokens only can be sent to the caller's function.
+   *
+   * Parameters: integer amount of tokens
+   *
+   * Returns: true if it is successful
+   *
+   * Requirements:
+   * - The amount of unclaimed tokens must be in the bridge.
+   * - amount to withdraw <= bridge's balance minus total to claim.
+   *
+   */
+  function withdrawToken(uint256 amount) external onlyOwner returns (bool) {
+    uint256 bridgeBalance = token.balanceOf(address(this));
+    uint256 availableToWithdraw = bridgeBalance - totalToClaim;    
+    require(
+      amount <= availableToWithdraw,
+      "Bridge: insufficient balance"
+    );
+
+    token.transfer(_msgSender(), amount);
     return true;
   }
 
@@ -1360,63 +1303,6 @@ contract Bridge is AccessControl, IBridge, Pausable {
     require(tokenAddress != ZERO_ADDRESS, "Bridge: zero address");
     emit TokenChanged(tokenAddress);
     token = IERC20(tokenAddress);
-    return true;
-  }
-
-  /**
-   * @dev Returns total of fees received by bridge.
-   *
-   * Parameters: none
-   *
-   * Returns: integer
-   *
-   */
-  function getTotalFeeReceivedBridge()
-    external
-    view
-    override
-    returns (uint256)
-  {
-    return totalFeeReceivedBridge;
-  }
-
-  /**
-   * @dev Returns token balance in bridge.
-   *
-   * Parameters: none
-   *
-   * Returns: integer amount of tokens in bridge
-   *
-   */
-  function getTokenBalance() external view override returns (uint256) {
-    return token.balanceOf(address(this));
-  }
-
-  /**
-   * @dev Withdraw tokens from bridge
-   *
-   * Only owner can call it.
-   *
-   * Can be called even if the Bridge is paused,
-   * because can happens a problem and it is necessary to withdraw tokens,
-   * maybe to create a new version of bridge, for example.
-   *
-   * The tokens only can be sent to the caller's function.
-   *
-   * Parameters: integer amount of tokens
-   *
-   * Returns: true if it is successful
-   *
-   * Requirements:
-   * - amount less or equal balance of tokens in bridge.
-   *
-   */
-  function withdrawToken(uint256 amount) external onlyOwner returns (bool) {
-    require(
-      amount <= token.balanceOf(address(this)),
-      "Bridge: insuficient balance"
-    );
-    token.transfer(_msgSender(), amount);
     return true;
   }
 
@@ -1554,7 +1440,6 @@ contract Bridge is AccessControl, IBridge, Pausable {
   * Requirements:
   *
   * - The contract must be paused.
-  &  
   */
   function unpause() external onlyOwner {
     /**

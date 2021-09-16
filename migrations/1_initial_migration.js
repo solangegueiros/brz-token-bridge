@@ -17,7 +17,6 @@ module.exports = async (deployer, network, accounts)=> {
   }
   else if (network == 'rinkeby') {
     brzTokenAddress = "0x420412E765BFa6d85aaaC94b4f7b708C89be2e2B";
-
   }
   else if (network == 'rskTestnet') {
     brzTokenAddress = "0xe355c280131dfaf18bf1c3648aee3c396db6b5fd";

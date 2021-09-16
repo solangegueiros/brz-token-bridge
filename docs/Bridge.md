@@ -67,7 +67,7 @@ Parameters: none
 
 Returns: string
 
-### `receiveTokens(uint256 amount, uint256[2] transactionFee, string toBlockchain, string toAddress) → bool` (external)
+### `receiveTokens(uint256 amount, string toBlockchain, string toAddress) → bool` (external)
 
 
 
@@ -79,28 +79,14 @@ Can not be called if the Bridge is paused.
 
 Parameters:
 - amount - gross amount of tokens to be crossed.
-- The Bridge fee will be deducted from this amount.
-- transactionFee - array with the fees:
-  - transactionFee[0] - fee in BRL - this fee will be added to amount transfered from caller's account.
-  - transactionFee[1] - fee in destiny currency(minor unit) - this information will be
-used in the destination Blockchain,
-by the monitor who will create the transaction and send using this fee defined here.
 - toBlockchain - the amount will be sent to this blockchain.
 - toAddress - the amount will be sent to this address. It can be diferent from caller's address.
 This is a string because some blockchain could not have the same pattern from Etherem / RSK / BSC.
 
 Returns: bool - true if it is sucessful.
 
-#### More info about fees
-
-- Blockchain / transaction fee in BRL - it will be transfered from user's account,
-along with the amount he would like to receive in the account.
-This will be spent in `toBlockchain`.
-Does not depend of amount, but of destination blockchain.
-
-- Bridge Fee - it is deducted from the requested amount.
+Bridge Fee: it is deducted from the requested amount.
 It is a percentage of the requested amount.
-Cannot include the transaction fee in order to be calculated.
 
 > Before call this function, the caller MUST have called function `approve` in BRZ token,
 > allowing the bridge's smart contract address to use the BRZ tokens,
@@ -117,15 +103,13 @@ Requirements:
 - amount greater than zero.
 
 Actions:
-- add the blockchain fee in BRZ to amount in BRZ, in totalAmount.
 - calculate bridge's fee using the original amount to be sent.
 - discount bridge's fee from the original amount, in amountMinusFees.
 - add bridge's fee to `totalFeeReceivedBridge`, a variable to store all the fees received by the bridge.
-- BRZ transfer totalAmount from the caller's address to bridge address.
+- BRZ transfer amount from the caller's address to bridge address.
 - emit `CrossRequest` event, with the parameters:
   - from - address of the caller's function.
   - amount - the net amount to be transfered in the destination blockchain.
-  - toFee - the fee which must be used to send the transfer transaction in the destination blockchain.
   - toAddress - string representing the address which will receive the tokens.
   - toBlockchain - the destination blockchain.
 
@@ -164,7 +148,14 @@ It is a point to be evaluated in an audit.
 
 
 This function accept the cross of token,
-which means it is called in the destination blockchain, who will send the tokens accepted to be crossed.
+which means it is called in the destination blockchain,
+who will send the tokens accepted to be crossed
+to the internal balance of the destination address.
+
+After this the balance will be available for the destination address claims it.
+
+In this way, an address can send tokens many times, calling the fucntion receiveTokens,
+but can receive the total amount in one single transaction, saving gas fees.
 
 > Only monitor can call it!
 
@@ -198,6 +189,97 @@ Actions:
 - sendToken:
   - check if the bridge has in his balance at least the amount required to do the transfer
   - transfer the amount tokens to destination address
+
+
+### `claim() → uint256 receivedAmount` (external)
+
+
+
+This function transfer tokens from bridge to destination address,
+who must be the address who called the function.
+
+When the monitor accept a transfer, it will call the function acceptTransfer,
+which will internaly transfer the tokens crossed to the destination address,
+updating the internal destination's balance.
+
+After this, the balance will be available for the destination address claims it,
+using the function `claim()`.
+
+> Any account / person can call it!
+
+It must have the internal destination's balance greather then zero.
+
+Can be called even if the Bridge is paused,
+because can happens a problem and it is necessary to withdraw tokens,
+maybe to create a new version of bridge, for example.
+
+
+### `getTotalFeeReceivedBridge() → uint256` (external)
+
+
+
+Returns total of fees received by bridge.
+
+Parameters: none
+
+Returns: integer
+
+
+### `getBalanceToClaim(address account) → uint256` (external)
+
+
+
+Returns the token's amount available to claim by an account.
+
+Parameters: address of an account.
+
+Returns: integer amount of tokens available to claim in bridge.
+
+
+### `getTokenBalance() → uint256` (external)
+
+
+
+Returns token balance in bridge.
+
+Parameters: none
+
+Returns: integer amount of tokens in bridge
+
+
+### `getTotalToClaim() → uint256` (external)
+
+
+
+Returns the token balance locked in the bridge.
+The bridge's token balance can never be less than the totalToClaim.
+
+Parameters: none.
+
+Returns: integer amount of tokens locked.
+
+
+### `withdrawToken(uint256 amount) → bool` (external)
+
+
+
+Withdraw tokens from bridge
+
+Only owner can call it.
+
+Can be called even if the Bridge is paused,
+because can happens a problem and it is necessary to withdraw tokens,
+maybe to create a new version of bridge, for example.
+
+The tokens only can be sent to the caller's function.
+
+Parameters: integer amount of tokens
+
+Returns: true if it is successful
+
+Requirements:
+- The amount of unclaimed tokens must be in the bridge.
+- amount to withdraw <= bridge's balance minus total to claim.
 
 
 ### `addMonitor(address monitorAddress) → bool` (external)
@@ -282,50 +364,6 @@ Requirements:
 - The token address must not be a zero address.
 
 Emit the event `TokenChanged(tokenAddress)`.
-
-
-### `getTotalFeeReceivedBridge() → uint256` (external)
-
-
-
-Returns total of fees received by bridge.
-
-Parameters: none
-
-Returns: integer
-
-
-### `getTokenBalance() → uint256` (external)
-
-
-
-Returns token balance in bridge.
-
-Parameters: none
-
-Returns: integer amount of tokens in bridge
-
-
-### `withdrawToken(uint256 amount) → bool` (external)
-
-
-
-Withdraw tokens from bridge
-
-Only owner can call it.
-
-Can be called even if the Bridge is paused,
-because can happens a problem and it is necessary to withdraw tokens,
-maybe to create a new version of bridge, for example.
-
-The tokens only can be sent to the caller's function.
-
-Parameters: integer amount of tokens
-
-Returns: true if it is successful
-
-Requirements:
-- amount less or equal balance of tokens in bridge.
 
 
 ### `existsBlockchain(string name) → bool` (public)
@@ -419,6 +457,5 @@ Returns: none
 Requirements:
 
 - The contract must be paused.
-  &
 
 
