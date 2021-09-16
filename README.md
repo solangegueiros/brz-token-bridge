@@ -1,5 +1,7 @@
 # brz-token-bridge
 
+This version contains the version 0.2.0, with fees logic inside smart contract.
+
 ```shell
 npm install
 ```
