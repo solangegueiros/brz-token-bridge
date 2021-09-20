@@ -2,7 +2,7 @@ const BRZToken = artifacts.require("BRZToken");
 const Bridge = artifacts.require("Bridge");
 const truffleAssertions = require('truffle-assertions');
 
-const { lp, DEFAULT_ADMIN_ROLE, ZERO_ADDRESS, ZERO_BYTES32, version, DECIMALPERCENT, feePercentageBridge, feeETH, feeBRL, amount } = require('../test/data');
+const { lp, DEFAULT_ADMIN_ROLE, ZERO_ADDRESS, ZERO_BYTES32, version, DECIMALPERCENT, feePercentageBridge, feeETH, feeBRL, amount } = require('./data');
 
 contract('Bridge', accounts => {
 
