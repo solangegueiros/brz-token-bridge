@@ -40,6 +40,19 @@ It should be exposed in the external API and be unique.
 
 Role MONITOR is used to manage the permissions of monitor's addresses.
 
+### `onlyAdmin()`
+
+
+
+Modifier which verifies if the caller is a monitor,
+it means he has the role `ADMIN_ROLE`.
+
+Role ADMIN are referred to its `bytes32` identifier,
+defined in the `public constant` called ADMIN_ROLE.
+It should be exposed in the external API and be unique.
+
+Role ADMIN is used to manage the permissions for update minimum fee per blockchain.
+
 
 ### `constructor(address tokenAddress)` (public)
 
@@ -67,7 +80,7 @@ Parameters: none
 
 Returns: string
 
-### `receiveTokens(uint256 amount, string toBlockchain, string toAddress) → bool` (external)
+### `receiveTokens(uint256 amount, uint256[2] transactionFee, string toBlockchain, string toAddress) → bool` (external)
 
 
 
@@ -79,14 +92,28 @@ Can not be called if the Bridge is paused.
 
 Parameters:
 - amount - gross amount of tokens to be crossed.
+  - The Bridge fee will be deducted from this amount.
+- transactionFee - array with the fees:
+  - transactionFee[0] - fee in BRL - this fee will be added to amount transfered from caller's account.
+  - transactionFee[1] - gas price for fee in destiny currency(minor unit) - this information will be
+     used in the destination Blockchain,
+     by the monitor who will create the transaction and send using this fee defined here.
 - toBlockchain - the amount will be sent to this blockchain.
 - toAddress - the amount will be sent to this address. It can be diferent from caller's address.
-This is a string because some blockchain could not have the same pattern from Etherem / RSK / BSC.
+This is a string because some blockchain could not have the same pattern from Ethereum / RSK / BSC.
 
 Returns: bool - true if it is sucessful.
 
-Bridge Fee: it is deducted from the requested amount.
+#### More info about fees
+
+- Blockchain / transaction fee in BRL - it will be transfered from user's account,
+along with the amount he would like to receive in the account.
+This will be spent in `toBlockchain`.
+Does not depend of amount, but of destination blockchain.
+
+- Bridge Fee - it is deducted from the requested amount.
 It is a percentage of the requested amount.
+Cannot include the transaction fee in order to be calculated.
 
 > Before call this function, the caller MUST have called function `approve` in BRZ token,
 > allowing the bridge's smart contract address to use the BRZ tokens,
@@ -100,16 +127,20 @@ ERC-20 tokens approve and transferFrom pattern:
 Requirements:
 - toBlockchain exists.
 - toAddress is not an empty string.
+- gasPrice in destiny blockchain (minor unit) greater than minGasPrice in toBlockchain
+- amount must be greater than minTokenAmount in toBlockchain
 - amount greater than zero.
 
 Actions:
+- add the blockchain fee in BRZ to amount in BRZ, in totalAmount.
 - calculate bridge's fee using the original amount to be sent.
 - discount bridge's fee from the original amount, in amountMinusFees.
 - add bridge's fee to `totalFeeReceivedBridge`, a variable to store all the fees received by the bridge.
-- BRZ transfer amount from the caller's address to bridge address.
+- BRZ transfer totalAmount from the caller's address to bridge address.
 - emit `CrossRequest` event, with the parameters:
   - from - address of the caller's function.
   - amount - the net amount to be transfered in the destination blockchain.
+  - toFee - the gas price fee, which must be used to send the transfer transaction in the destination blockchain.
   - toAddress - string representing the address which will receive the tokens.
   - toBlockchain - the destination blockchain.
 
@@ -149,13 +180,7 @@ It is a point to be evaluated in an audit.
 
 This function accept the cross of token,
 which means it is called in the destination blockchain,
-who will send the tokens accepted to be crossed
-to the internal balance of the destination address.
-
-After this the balance will be available for the destination address claims it.
-
-In this way, an address can send tokens many times, calling the fucntion receiveTokens,
-but can receive the total amount in one single transaction, saving gas fees.
+who will send the tokens accepted to be crossed.
 
 > Only monitor can call it!
 
@@ -191,29 +216,6 @@ Actions:
   - transfer the amount tokens to destination address
 
 
-### `claim() → uint256 receivedAmount` (external)
-
-
-
-This function transfer tokens from bridge to destination address,
-who must be the address who called the function.
-
-When the monitor accept a transfer, it will call the function acceptTransfer,
-which will internaly transfer the tokens crossed to the destination address,
-updating the internal destination's balance.
-
-After this, the balance will be available for the destination address claims it,
-using the function `claim()`.
-
-> Any account / person can call it!
-
-It must have the internal destination's balance greather then zero.
-
-Can be called even if the Bridge is paused,
-because can happens a problem and it is necessary to withdraw tokens,
-maybe to create a new version of bridge, for example.
-
-
 ### `getTotalFeeReceivedBridge() → uint256` (external)
 
 
@@ -225,17 +227,6 @@ Parameters: none
 Returns: integer
 
 
-### `getBalanceToClaim(address account) → uint256` (external)
-
-
-
-Returns the token's amount available to claim by an account.
-
-Parameters: address of an account.
-
-Returns: integer amount of tokens available to claim in bridge.
-
-
 ### `getTokenBalance() → uint256` (external)
 
 
@@ -245,18 +236,6 @@ Returns token balance in bridge.
 Parameters: none
 
 Returns: integer amount of tokens in bridge
-
-
-### `getTotalToClaim() → uint256` (external)
-
-
-
-Returns the token balance locked in the bridge.
-The bridge's token balance can never be less than the totalToClaim.
-
-Parameters: none.
-
-Returns: integer amount of tokens locked.
 
 
 ### `withdrawToken(uint256 amount) → bool` (external)
@@ -278,11 +257,10 @@ Parameters: integer amount of tokens
 Returns: true if it is successful
 
 Requirements:
-- The amount of unclaimed tokens must be in the bridge.
-- amount to withdraw <= bridge's balance minus total to claim.
+- amount less or equal balance of tokens in bridge.
 
 
-### `addMonitor(address monitorAddress) → bool` (external)
+### `addMonitor(address account) → bool` (external)
 
 
 
@@ -297,7 +275,7 @@ Parameters: address of monitor to be added
 Returns: bool - true if it is sucessful
 
 
-### `delMonitor(address monitorAddress) → bool` (external)
+### `delMonitor(address account) → bool` (external)
 
 
 
@@ -310,6 +288,102 @@ Can not be called if the Bridge is paused.
 Parameters: address of monitor to be excluded
 
 Returns: bool - true if it is sucessful
+
+
+### `addAdmin(address account) → bool` (external)
+
+
+
+This function add an address in the `ADMIN_ROLE`.
+
+Only owner can call it.
+
+Can not be called if the Bridge is paused.
+
+Parameters: address of admin to be added
+
+Returns: bool - true if it is sucessful
+
+
+### `delAdmin(address account) → bool` (external)
+
+
+
+This function excludes an address in the `ADMIN_ROLE`.
+
+Only owner can call it.
+
+Can not be called if the Bridge is paused.
+
+Parameters: address of admin to be excluded
+
+Returns: bool - true if it is sucessful
+
+
+### `setMinGasPrice(string blockchainName, uint256 newFee) → bool` (public)
+
+
+
+This function update the minimum blockchain fee - gas price - in the minor unit.
+
+Only admin can call it.
+
+Can not be called if the Bridge is paused.
+
+Parameters: integer, the new fee
+
+Returns: bool - true if it is sucessful
+
+Requirements:
+- blockchain must exists.
+
+Emit the event `MinGasPriceChanged(blockchain, oldFee, newFee)`.
+
+
+### `getMinGasPrice(string blockchainName) → uint256` (external)
+
+
+
+Returns the minimum gas price to cross tokens.
+
+The function acceptTransfer can not accpept less than the minimum gas price per blockchain.
+
+Parameters: string, blockchain name
+
+Returns: integer
+
+
+### `setMinTokenAmount(string blockchainName, uint256 newAmount) → bool` (public)
+
+
+
+This function update the minimum token's amount to be crossed.
+
+Only admin can call it.
+
+Can not be called if the Bridge is paused.
+
+Parameters: integer, the new amount
+
+Returns: bool - true if it is sucessful
+
+Requirements:
+- blockchain must exists.
+
+Emit the event `MinTokenAmountChanged(blockchain, oldMinimumAmount, newMinimumAmount)`.
+
+
+### `getMinTokenAmount(string blockchainName) → uint256` (external)
+
+
+
+Returns the minimum token amount to cross.
+
+The function acceptTransfer can not accpept less than the minimum per blockchain.
+
+Parameters: string, blockchain name
+
+Returns: integer
 
 
 ### `setFeePercentageBridge(uint256 newFee) → bool` (external)

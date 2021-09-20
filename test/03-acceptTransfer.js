@@ -2,25 +2,31 @@ const BRZToken = artifacts.require("BRZToken");
 const Bridge = artifacts.require("Bridge");
 const truffleAssertions = require('truffle-assertions');
 
-const { lp, DEFAULT_ADMIN_ROLE, ZERO_ADDRESS, ZERO_BYTES32, version, DECIMALPERCENT, feePercentageBridge, feeETH, feeBRL, amount } = require('../test/data');
+const { lp, DEFAULT_ADMIN_ROLE, ZERO_ADDRESS, ZERO_BYTES32, version, 
+  DECIMALPERCENT, feePercentageBridge, minGasPrice, feeETH, feeBRL, amount, minAmount } = require('../test/data');
+let MONITOR_ROLE;
+let ADMIN_ROLE;
 
 contract('Bridge', accounts => {
 
-  const [owner, monitor, monitor2, accountSender, accountReceiver, anyAccount] = accounts;
+  const [owner, monitor, admin, accountSender, accountReceiver, anyAccount] = accounts;
   if (lp) console.log ("\n accounts: \n", accounts, "\n");
 
-  const fromBlockchain = "RSKTestnet";
+  const toBlockchain = "EthereumRinkeby";  
   const toAddress = accountReceiver;
   let feePercentageBridge;
+  let gasPrice = minGasPrice;
 
   let eventCrossRequest;
   let receiver;
   let eventSender;
   let eventAmount;
   let eventBlockchain;
+  let eventToFee;
   let logIndex;
   let blockHash;
-  let transactionHash;  
+  let transactionHash; 
+  let transactionId; 
 
   before(async () => {
     brz = await BRZToken.new({ from: owner });
@@ -42,6 +48,11 @@ contract('Bridge', accounts => {
 
     //Monitor
     await bridge.addMonitor(monitor, {from: owner});
+    //Admin
+    await bridge.addAdmin(admin, {from: owner});
+    //Because the Ethereum blockchain has high fees, it will be used here.
+    await bridge.setMinGasPrice("EthereumRinkeby", minGasPrice, {from: admin});
+    await bridge.setMinTokenAmount("EthereumRinkeby", minAmount, {from: admin});
   });
 
   beforeEach('test', async () => {
@@ -52,18 +63,31 @@ contract('Bridge', accounts => {
     await brz.approve(bridge.address, amount*2, {from: accountSender} );
 
     // console.log("bridge.receiveTokens");
-    response = await bridge.receiveTokens(amount, fromBlockchain, toAddress, {from: accountSender});
+    response = await bridge.receiveTokens(amount, [feeBRL, gasPrice], toBlockchain, toAddress, {from: accountSender});
     eventCrossRequest = response.logs[0];
-    receiver = eventCrossRequest.args[2];
 
+    receiver = eventCrossRequest.args[3];
     eventSender = eventCrossRequest.args[0];
     eventAmount = eventCrossRequest.args[1].toNumber();
-    eventBlockchain = eventCrossRequest.args[3];
+    eventBlockchain = eventCrossRequest.args[4];
+    eventToFee = eventCrossRequest.args[2].toNumber();
     logIndex = eventCrossRequest.logIndex;
-
     //hashes, //blockHash, transactionHash
     blockHash = eventCrossRequest.blockHash;
     transactionHash = eventCrossRequest.transactionHash;
+    if (lp) console.log("receiver: \t\t" + receiver);
+    if (lp) console.log("eventSender: \t\t" + eventSender);
+    if (lp) console.log("eventAmount: \t\t" + eventAmount);
+    if (lp) console.log("eventBlockchain: \t" + eventBlockchain);
+    if (lp) console.log("eventToFee: \t\t" + eventToFee);
+    if (lp) console.log("blockHash: \t\t\t" + blockHash);
+    if (lp) console.log("transactionHash: \t\t" + transactionHash);
+    if (lp) console.log("logIndex: \t\t" + logIndex);
+
+    transactionId = await bridge.getTransactionId([blockHash, transactionHash], 
+      receiver, eventAmount, logIndex, {from: monitor});
+    if (lp) console.log("transactionId: \t\t" + transactionId);
+
   });
 
   // The monitor backend listen the event CrossRequest, 
@@ -73,30 +97,34 @@ contract('Bridge', accounts => {
 
   // Suppose that this is the other blockchain now
 
-
   describe('transactionId', () => {
 
     it('getTransactionId', async () => {
-      transactionId = await bridge.getTransactionId([blockHash, transactionHash], 
-        receiver, eventAmount, logIndex, {from: monitor});
       if (lp) console.log("id: ", transactionId);
+      truffleAssertions.passes(
+        bridge.getTransactionId([blockHash, transactionHash], receiver, eventAmount, logIndex, {from: monitor})
+      );
     });
 
     it('transactionId not isProcessed before acceptTransfer', async () => {
-      transactionId = await bridge.getTransactionId([blockHash, transactionHash], 
-        receiver, eventAmount, logIndex, {from: monitor});
-
       isProcessed = await bridge.processed(transactionId);
       assert.isFalse(isProcessed, "transactionId isProcessed before wrong");        
     });
 
     it('transactionId isProcessed after acceptTransfer', async () => {
-      await bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
+      isProcessed = await bridge.processed(transactionId);
+      if (lp) console.log("isProcessed before: " + isProcessed);
 
-      transactionId = await bridge.getTransactionId([blockHash, transactionHash], 
-        receiver, eventAmount, logIndex, {from: monitor});
+      if (eventToFee > 0) {        
+        await bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor, gasPrice: eventToFee})
+      }
+      else {
+        await bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
+      }
 
       isProcessed = await bridge.processed(transactionId);
+      if (lp) console.log("isProcessed after: " + isProcessed);
+
       assert.isTrue(isProcessed, "transactionId NOT isProcessed after acceptTransfer");
     });
   });
@@ -168,7 +196,7 @@ contract('Bridge', accounts => {
         , "Bridge: already processed");
     });
 
-    it('bridge BRZ balance do not change after acceptTransfer', async () => {
+    it('bridge BRZ balance decreased after acceptTransfer', async () => {
       balanceBefore = (await brz.balanceOf(bridge.address, {from: anyAccount})).toNumber();
       if (lp) console.log("\n brz.balanceOf Bridge before", balanceBefore);
 
@@ -177,47 +205,30 @@ contract('Bridge', accounts => {
       balanceAfter = (await brz.balanceOf(bridge.address, {from: anyAccount})).toNumber();
       if (lp) console.log("\n brz.balanceOf Bridge after", balanceAfter);
 
-      assert.equal(balanceBefore, balanceAfter, "bridge balance is wrong");
+      assert.equal(balanceBefore, balanceAfter + eventAmount, "bridge balance is wrong");
     });
 
-    it('totalToClaim increased after acceptTransfer', async () => {
-      before = (await bridge.getTotalToClaim({from: anyAccount})).toNumber();
-      if (lp) console.log("\n bridge.totalToClaim before", balanceBefore);
+    it('receiver BRZ balance increased after acceptTransfer', async () => {
+      balanceBefore = (await brz.balanceOf(receiver, {from: anyAccount})).toNumber();
+      if (lp) console.log("\n brz.balanceOf receiver before", balanceBefore);
 
       await bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
 
-      after = (await bridge.getTotalToClaim({from: anyAccount})).toNumber();
-      if (lp) console.log("\n bridge.totalToClaim after", balanceAfter);
+      balanceAfter = (await brz.balanceOf(receiver, {from: anyAccount})).toNumber();
+      if (lp) console.log("\n brz.balanceOf receiver after", balanceAfter);
 
-      assert.equal(before + eventAmount, after, "totalToClaim is wrong");
+      assert.equal(balanceBefore + eventAmount, balanceAfter, "receiver balance is wrong");
     });
 
     it('acceptTransfer should fails when the bridge not have enought token balance', async () => {
-      balanceBefore = (await bridge.getTokenBalance({from: anyAccount})).toNumber();
-      if (lp) console.log("\n bridge.getTokenBalance before", balanceBefore);
-      totalToClaim = (await bridge.getTotalToClaim({from: anyAccount})).toNumber();
-      if (lp) console.log("\n bridge.totalToClaim", totalToClaim);
-      amountToWithdraw = balanceBefore - totalToClaim;
-      await bridge.withdrawToken(amountToWithdraw, {from: owner});
-      balanceAfter = (await bridge.getTokenBalance({from: anyAccount})).toNumber();
-      if (lp) console.log("\n bridge.getTokenBalance after", balanceAfter);
+      balance = (await bridge.getTokenBalance({from: anyAccount})).toNumber();
+      await bridge.withdrawToken(balance, {from: owner});
+      //Now the bridge's balance is zero
 
       await truffleAssertions.fails(
         bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
         , 'Bridge: insufficient balance');
-    });
-
-    it('receiver getBalanceToClaim increased after receiveTokens', async () => {
-      balanceBefore = (await bridge.getBalanceToClaim(receiver, {from: anyAccount})).toNumber();
-      if (lp) console.log("\n bridge.getBalanceToClaim receiver before", balanceBefore);
-
-      await bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
-
-      balanceAfter = (await bridge.getBalanceToClaim(receiver, {from: anyAccount})).toNumber();
-      if (lp) console.log("\n bridge.getBalanceToClaim receiver after", balanceAfter);
-
-      assert.equal(balanceBefore + eventAmount, balanceAfter, "receiver getBalanceToClaim is wrong");
-    });
+    }); 
 
     it('acceptTransfer should fails when bridge is paused', async () => {   
       await bridge.pause({ from: owner });
@@ -226,51 +237,6 @@ contract('Bridge', accounts => {
         , 'Pausable: paused');
 
       await bridge.unpause({ from: owner });
-    });
-
-  });
-
-  describe('event CrossAccepted', () => {
-    let transaction;
-    let eventCrossAccepted;
-
-    beforeEach('test', async () => {
-      transaction = await bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor});
-      eventCrossAccepted = transaction.logs[0];
-    });
-
-    it('should emit event CrossAccepted when receiveTokens', async () => {
-      truffleAssertions.eventEmitted(transaction, 'CrossAccepted');
-    });
-
-    it('event CrossAccepted - receiver', async () => {
-      truffleAssertions.eventEmitted(transaction, 'CrossAccepted', ev => ev.receiver === receiver);
-    });
-
-    it('event CrossAccepted - amount', async () => {
-      //response = eventCrossRequest.args[1].toNumber();
-      //assert.equal(response, eventAmount, "response is diferent from eventAmount");
-      truffleAssertions.eventEmitted(transaction, 'CrossAccepted', ev => ev.amount.toNumber() === eventAmount);
-    });
-
-    it('event CrossAccepted - sender', async () => {
-      truffleAssertions.eventEmitted(transaction, 'CrossAccepted', ev => ev.sender === eventSender);
-    });
-
-    it('event CrossAccepted - fromBlockchain', async () => {
-      truffleAssertions.eventEmitted(transaction, 'CrossAccepted', ev => ev.fromBlockchain === eventBlockchain);
-    });
-
-    it('event CrossAccepted - blockHash', async () => {
-      truffleAssertions.eventEmitted(transaction, 'CrossAccepted', ev => ev.hashes[0] === blockHash);
-    });
-
-    it('event CrossAccepted - transactionHash', async () => {
-      truffleAssertions.eventEmitted(transaction, 'CrossAccepted', ev => ev.hashes[1] === transactionHash);
-    });
-
-    it('event CrossAccepted - logIndex', async () => {
-      truffleAssertions.eventEmitted(transaction, 'CrossAccepted', ev => ev.logIndex.toNumber() === logIndex);
     });
 
   });

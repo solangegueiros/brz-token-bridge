@@ -5,20 +5,27 @@ pragma solidity 0.8.4;
 import "./ozeppelin/token/ERC20/IERC20.sol";
 
 interface IBridge {
-  function getBalanceToClaim(address account) external view returns (uint256);
+  function version() external pure returns (string memory);
 
   function getFeePercentageBridge() external view returns (uint256);
 
-  function getTokenBalance() external view returns (uint256);
+  function getMinGasPrice(string calldata blockchainName)
+    external
+    view
+    returns (uint256);
 
-  function getTotalToClaim() external view returns (uint256);
+  function getMinTokenAmount(string calldata blockchainName)
+    external
+    view
+    returns (uint256);
 
   function getTotalFeeReceivedBridge() external view returns (uint256);
 
-  function version() external pure returns (string memory);
+  function getTokenBalance() external view returns (uint256);
 
   function receiveTokens(
     uint256 amount,
+    uint256[2] calldata transactionFee,
     string calldata toBlockchain,
     string calldata toAddress
   ) external returns (bool);
@@ -31,8 +38,6 @@ interface IBridge {
     bytes32[2] calldata hashes, //blockHash, transactionHash
     uint32 logIndex
   ) external returns (bool);
-
-  function claim() external returns (uint256);
 
   function getTransactionId(
     bytes32[2] calldata hashes, //blockHash, transactionHash
@@ -48,20 +53,20 @@ interface IBridge {
   event CrossRequest(
     address from,
     uint256 amount,
+    uint256 toFee,
     string toAddress,
     string toBlockchain
   );
-
-  //hashes[2] = [blockHash, transactionHash]
-  event CrossAccepted(
-    address receiver,
-    uint256 amount,
-    string sender,
-    string fromBlockchain,
-    bytes32[2] hashes,
-    uint32 logIndex
-  );
-
   event FeePercentageBridgeChanged(uint256 oldFee, uint256 newFee);
   event TokenChanged(address tokenAddress);
+  event MinGasPriceChanged(
+    string blockchainName,
+    uint256 oldFee,
+    uint256 newFee
+  );
+  event MinTokenAmountChanged(
+    string blockchainName,
+    uint256 oldAmount,
+    uint256 newAmount
+  );
 }

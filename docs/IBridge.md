@@ -5,7 +5,7 @@
 
 
 
-### `getBalanceToClaim(address account) → uint256` (external)
+### `version() → string` (external)
 
 
 
@@ -17,13 +17,13 @@
 
 
 
-### `getTokenBalance() → uint256` (external)
+### `getMinGasPrice(string blockchainName) → uint256` (external)
 
 
 
 
 
-### `getTotalToClaim() → uint256` (external)
+### `getMinTokenAmount(string blockchainName) → uint256` (external)
 
 
 
@@ -35,25 +35,19 @@
 
 
 
-### `version() → string` (external)
+### `getTokenBalance() → uint256` (external)
 
 
 
 
 
-### `receiveTokens(uint256 amount, string toBlockchain, string toAddress) → bool` (external)
+### `receiveTokens(uint256 amount, uint256[2] transactionFee, string toBlockchain, string toAddress) → bool` (external)
 
 
 
 
 
 ### `acceptTransfer(address receiver, uint256 amount, string sender, string fromBlockchain, bytes32[2] hashes, uint32 logIndex) → bool` (external)
-
-
-
-
-
-### `claim() → uint256` (external)
 
 
 
@@ -78,13 +72,7 @@
 
 
 
-### `CrossRequest(address from, uint256 amount, string toAddress, string toBlockchain)`
-
-
-
-
-
-### `CrossAccepted(address receiver, uint256 amount, string sender, string fromBlockchain, bytes32[2] hashes, uint32 logIndex)`
+### `CrossRequest(address from, uint256 amount, uint256 toFee, string toAddress, string toBlockchain)`
 
 
 
@@ -97,6 +85,18 @@
 
 
 ### `TokenChanged(address tokenAddress)`
+
+
+
+
+
+### `MinGasPriceChanged(string blockchainName, uint256 oldFee, uint256 newFee)`
+
+
+
+
+
+### `MinTokenAmountChanged(string blockchainName, uint256 oldAmount, uint256 newAmount)`
 
 
 

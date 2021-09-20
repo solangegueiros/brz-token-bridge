@@ -2,12 +2,14 @@ const BRZToken = artifacts.require("BRZToken");
 const Bridge = artifacts.require("Bridge");
 const truffleAssertions = require('truffle-assertions');
 
-const { lp, DEFAULT_ADMIN_ROLE, ZERO_ADDRESS, ZERO_BYTES32, version, DECIMALPERCENT, feePercentageBridge, feeETH, feeBRL, amount } = require('../test/data');
-let MONITOR_ROLE
+const { lp, DEFAULT_ADMIN_ROLE, ZERO_ADDRESS, ZERO_BYTES32, version, DECIMALPERCENT, feePercentageBridge, feeETH, feeBRL, amount } = require('./data');
+let MONITOR_ROLE;
+let ADMIN_ROLE;
+let blockchainName = "blockchainName";
 
 contract('Bridge', accounts => {
 
-  const [owner, owner2, monitor, monitor2, accountSender, accountReceiver, anyAccount] = accounts;
+  const [owner, owner2, monitor, monitor2, admin, admin2, accountSender, accountReceiver, anyAccount] = accounts;
   console.log ("\n accounts: \n", accounts, "\n");
 
   before(async () => {
@@ -18,7 +20,10 @@ contract('Bridge', accounts => {
     console.log("bridge: " + bridge.address); 
 
     MONITOR_ROLE = await bridge.MONITOR_ROLE();
-    console.log("MONITOR_ROLE: " + MONITOR_ROLE, "\n");     
+    console.log("MONITOR_ROLE: " + MONITOR_ROLE, "\n");
+
+    ADMIN_ROLE = await bridge.ADMIN_ROLE();
+    console.log("ADMIN_ROLE: " + ADMIN_ROLE, "\n");
   });
 
   describe('Constructor', () => {
@@ -62,15 +67,138 @@ contract('Bridge', accounts => {
       assert.equal(response, 0, "getTokenBalance is NOT zero");
     });
 
-    it('getTotalToClaim is zero', async () => {
-      const response = await bridge.getTotalToClaim({from: anyAccount});
-      assert.equal(response, 0, "getTotalToClaim is NOT zero");
+  });
+
+  describe('Monitor', () => {
+
+    it('monitor has not role MONITOR_ROLE yet', async () => {
+      response = await bridge.hasRole(MONITOR_ROLE, monitor, {from: owner});
+      if (lp) console.log("monitor is in bridge MONITOR_ROLE", response);
+      assert.equal(response, false, "monitor already has role MONITOR_ROLE");
     });
 
-    it('internal token balance to claim of an account is zero', async () => {
-      const response = await bridge.getBalanceToClaim(anyAccount, {from: anyAccount});
-      assert.equal(response, 0, "getBalanceToClaim is NOT zero");
+    it('owner can addMonitor', async () => {
+      await truffleAssertions.passes(bridge.addMonitor(monitor, {from: owner}));
     });
+
+    it('monitor has role MONITOR_ROLE', async () => {
+      response = await bridge.hasRole(MONITOR_ROLE, monitor, {from: owner});
+      if (lp) console.log("monitor is in bridge MONITOR_ROLE", response);
+      assert.isTrue(response, "monitor has NOT role MONITOR_ROLE");
+    });
+
+    it('owner can delMonitor', async () => {
+      await truffleAssertions.passes(bridge.delMonitor(monitor, {from: owner}));
+    });
+
+    it('monitor has not role MONITOR_ROLE anymore', async () => {
+      response = await bridge.hasRole(MONITOR_ROLE, monitor, {from: owner});
+      if (lp) console.log("monitor is in bridge MONITOR_ROLE", response);
+      assert.isFalse(response, "monitor still has role MONITOR_ROLE");
+    });
+    
+    it('anyAccount can not addMonitor', async () => {
+      await truffleAssertions.fails(bridge.addMonitor(monitor, {from: anyAccount}), "not owner");
+    });
+
+    it('anyAccount can not delMonitor', async () => {
+      await bridge.addMonitor(monitor, {from: owner});
+      await truffleAssertions.fails(bridge.delMonitor(monitor, {from: anyAccount}), "not owner");
+    });    
+
+    it('monitor2 can not addMonitor', async () => {
+      await truffleAssertions.fails(bridge.addMonitor(monitor, {from: monitor2}), "not owner");
+    });
+
+    it('monitor2 can not delMonitor', async () => {
+      await bridge.addMonitor(monitor, {from: owner});
+      await truffleAssertions.fails(bridge.delMonitor(monitor, {from: monitor2}), "not owner");
+    });
+    
+    it('event AccessControl.RoleRevoked emited', async () => { 
+      response = await bridge.delMonitor(monitor, {from: owner})     
+      eventEmited = response.logs[0];
+      if (lp) console.log("eventEmited\n", eventEmited);   
+      assert.equal(eventEmited.event, "RoleRevoked", "event RoleRevoked not emited");
+    });
+
+    it('event AccessControl.RoleGranted emited', async () => { 
+      response = await bridge.addMonitor(monitor, {from: owner});
+      eventEmited = response.logs[0];
+      if (lp) console.log("eventEmited\n", eventEmited);   
+      assert.equal(eventEmited.event, "RoleGranted", "event RoleGranted not emited");
+    });
+
+    it('it is possible to have more than one monitor', async () => {
+      await truffleAssertions.passes(bridge.addMonitor(monitor2, {from: owner}));
+    });
+
+  });
+
+  describe('Admin', () => {
+
+    it('admin has not role ADMIN_ROLE yet', async () => {
+      response = await bridge.hasRole(ADMIN_ROLE, admin, {from: owner});
+      if (lp) console.log("admin is in bridge ADMIN_ROLE", response);
+      assert.equal(response, false, "admin already has role ADMIN_ROLE");
+    });
+
+    it('owner can addAdmin', async () => {
+      await truffleAssertions.passes(bridge.addAdmin(admin, {from: owner}));
+    });
+
+    it('admin has role ADMIN_ROLE', async () => {
+      response = await bridge.hasRole(ADMIN_ROLE, admin, {from: owner});
+      if (lp) console.log("admin is in bridge ADMIN_ROLE", response);
+      assert.isTrue(response, "admin has NOT role ADMIN_ROLE");
+    });
+
+    it('owner can delAdmin', async () => {
+      await truffleAssertions.passes(bridge.delAdmin(admin, {from: owner}));
+    });
+
+    it('admin has not role ADMIN_ROLE anymore', async () => {
+      response = await bridge.hasRole(ADMIN_ROLE, admin, {from: owner});
+      if (lp) console.log("admin is in bridge ADMIN_ROLE", response);
+      assert.isFalse(response, "admin still has role ADMIN_ROLE");
+    });
+    
+    it('anyAccount can not addAdmin', async () => {
+      await truffleAssertions.fails(bridge.addAdmin(admin, {from: anyAccount}), "not owner");
+    });
+
+    it('anyAccount can not delAdmin', async () => {
+      await bridge.addAdmin(admin, {from: owner});
+      await truffleAssertions.fails(bridge.delAdmin(admin, {from: anyAccount}), "not owner");
+    });    
+
+    it('admin2 can not addAdmin', async () => {
+      await truffleAssertions.fails(bridge.addAdmin(admin, {from: admin2}), "not owner");
+    });
+
+    it('admin2 can not delAdmin', async () => {
+      await bridge.addAdmin(admin, {from: owner});
+      await truffleAssertions.fails(bridge.delAdmin(admin, {from: admin2}), "not owner");
+    });
+    
+    it('event AccessControl.RoleRevoked emited', async () => { 
+      response = await bridge.delAdmin(admin, {from: owner})     
+      eventEmited = response.logs[0];
+      if (lp) console.log("eventEmited\n", eventEmited);   
+      assert.equal(eventEmited.event, "RoleRevoked", "event RoleRevoked not emited");
+    });
+
+    it('event AccessControl.RoleGranted emited', async () => { 
+      response = await bridge.addAdmin(admin, {from: owner});
+      eventEmited = response.logs[0];
+      if (lp) console.log("eventEmited\n", eventEmited);   
+      assert.equal(eventEmited.event, "RoleGranted", "event RoleGranted not emited");
+    });
+
+    it('it is possible to have more than one admin', async () => {
+      await truffleAssertions.passes(bridge.addAdmin(admin2, {from: owner}));
+    });
+
   });
 
   describe('Blockchains', () => {
@@ -145,68 +273,91 @@ contract('Bridge', accounts => {
 
   });
 
-  describe('Monitor', () => {
+  describe('MinGasPrice', () => {
 
-    it('monitor has not role MONITOR_ROLE yet', async () => {
-      response = await bridge.hasRole(MONITOR_ROLE, monitor, {from: owner});
-      if (lp) console.log("monitor is in bridge MONITOR_ROLE", response);
-      assert.equal(response, false, "monitor already has role MONITOR_ROLE");
+    const newFee = 20;
+    beforeEach(async () => {
+      bridge = await Bridge.new(brz.address, {from: owner});
+      await bridge.addBlockchain(blockchainName, {from: owner});
+      // response = await bridge.listBlockchain({from: anyAccount});
+      // console.log("Blockchains: " + response);
+      await bridge.addAdmin(admin, {from: owner});      
     });
 
-    it('owner can addMonitor', async () => {
-      await truffleAssertions.passes(bridge.addMonitor(monitor, {from: owner}));
+    it('onlyAdmin can setMinGasPrice', async () => {   
+      // response = await bridge.existsBlockchain(blockchainName, {from: anyAccount});
+      // console.log("Blockchain " + blockchainName, "exists:", response);   
+      await bridge.setMinGasPrice(blockchainName, newFee, {from: admin});
+      response = await bridge.getMinGasPrice(blockchainName, {from: anyAccount});
+      assert.equal(response, newFee, "setMinGasPrice is wrong");
     });
 
-    it('monitor has role MONITOR_ROLE', async () => {
-      response = await bridge.hasRole(MONITOR_ROLE, monitor, {from: owner});
-      if (lp) console.log("monitor is in bridge MONITOR_ROLE", response);
-      assert.isTrue(response, "monitor has NOT role MONITOR_ROLE");
+    it('anyAccount can not setMinGasPrice', async () => {
+      await truffleAssertions.fails(bridge.setMinGasPrice(blockchainName, newFee, {from: anyAccount}), "not admin");
     });
 
-    it('owner can delMonitor', async () => {
-      await truffleAssertions.passes(bridge.delMonitor(monitor, {from: owner}));
-    });
-
-    it('monitor has not role MONITOR_ROLE anymore', async () => {
-      response = await bridge.hasRole(MONITOR_ROLE, monitor, {from: owner});
-      if (lp) console.log("monitor is in bridge MONITOR_ROLE", response);
-      assert.isFalse(response, "monitor still has role MONITOR_ROLE");
-    });
-    
-    it('anyAccount can not addMonitor', async () => {
-      await truffleAssertions.fails(bridge.addMonitor(monitor, {from: anyAccount}), "not owner");
-    });
-
-    it('anyAccount can not delMonitor', async () => {
-      await bridge.addMonitor(monitor, {from: owner});
-      await truffleAssertions.fails(bridge.delMonitor(monitor, {from: anyAccount}), "not owner");
-    });    
-
-    it('monitor2 can not addMonitor', async () => {
-      await truffleAssertions.fails(bridge.addMonitor(monitor, {from: monitor2}), "not owner");
-    });
-
-    it('monitor2 can not delMonitor', async () => {
-      await bridge.addMonitor(monitor, {from: owner});
-      await truffleAssertions.fails(bridge.delMonitor(monitor, {from: monitor2}), "not owner");
-    });
-    
-    it('event AccessControl.RoleRevoked emited', async () => { 
-      response = await bridge.delMonitor(monitor, {from: owner})     
+    it('event MinGasPriceChanged emited', async () => {
+      response = await bridge.setMinGasPrice(blockchainName, newFee, {from: admin});
       eventEmited = response.logs[0];
       if (lp) console.log("eventEmited\n", eventEmited);   
-      assert.equal(eventEmited.event, "RoleRevoked", "event RoleRevoked not emited");
+      assert.equal(eventEmited.event, "MinGasPriceChanged", "event MinGasPriceChanged not emited");
     });
 
-    it('event AccessControl.RoleGranted emited', async () => { 
-      response = await bridge.addMonitor(monitor, {from: owner});
+    it('oldFee updated in event MinGasPriceChanged', async () => {
+      const oldFee = (await bridge.getMinGasPrice(blockchainName, {from: anyAccount})).toNumber();
+      response = await bridge.setMinGasPrice(blockchainName, newFee, {from: admin});
+      eventEmited = response.logs[0];
+      oldFeeInEvent = eventEmited.args[1];
+      assert.equal(oldFee, oldFeeInEvent, "oldFee in MinGasPriceChanged is wrong");
+    });
+
+    it('newFee updated in event MinGasPriceChanged', async () => {
+      response = await bridge.setMinGasPrice(blockchainName, newFee, {from: admin});
+      eventEmited = response.logs[0];
+      newFeeInEvent = eventEmited.args[2];
+      assert.equal(newFee, newFeeInEvent, "newFee in MinGasPriceChanged is wrong");
+    });
+  });
+
+  describe('MinTokenAmount', () => {
+
+    const newAmount = 1000000;  //100 BRZs
+    beforeEach(async () => {
+      bridge = await Bridge.new(brz.address, {from: owner});
+      await bridge.addBlockchain(blockchainName, {from: owner});
+      await bridge.addAdmin(admin, {from: owner});      
+    });
+
+    it('onlyAdmin can setMinTokenAmount', async () => {      
+      await bridge.setMinTokenAmount(blockchainName, newAmount, {from: admin});
+      response = await bridge.getMinTokenAmount(blockchainName, {from: anyAccount});
+      assert.equal(response, newAmount, "setMinTokenAmount is wrong");
+    });
+
+    it('anyAccount can not setMinTokenAmount', async () => {
+      await truffleAssertions.fails(bridge.setMinTokenAmount(blockchainName, newAmount, {from: anyAccount}), "not admin");
+    });
+
+    it('event MinTokenAmountChanged emited', async () => {
+      response = await bridge.setMinTokenAmount(blockchainName, newAmount, {from: admin});
       eventEmited = response.logs[0];
       if (lp) console.log("eventEmited\n", eventEmited);   
-      assert.equal(eventEmited.event, "RoleGranted", "event RoleGranted not emited");
+      assert.equal(eventEmited.event, "MinTokenAmountChanged", "event MinTokenAmountChanged not emited");
     });
 
-    it('it is possible to have more than one monitor', async () => {
-      await truffleAssertions.passes(bridge.addMonitor(monitor2, {from: owner}));
+    it('oldAmount updated in event MinTokenAmountChanged', async () => {
+      const oldAmount = (await bridge.getMinTokenAmount(blockchainName, {from: anyAccount})).toNumber();
+      response = await bridge.setMinTokenAmount(blockchainName, newAmount, {from: admin});
+      eventEmited = response.logs[0];
+      oldAmountInEvent = eventEmited.args[1];
+      assert.equal(oldAmount, oldAmountInEvent, "oldAmount in MinTokenAmountChanged is wrong");
+    });
+
+    it('newAmount updated in event MinTokenAmountChanged', async () => {
+      response = await bridge.setMinTokenAmount(blockchainName, newAmount, {from: admin});
+      eventEmited = response.logs[0];
+      newAmountInEvent = eventEmited.args[2];
+      assert.equal(newAmount, newAmountInEvent, "newAmount in MinTokenAmountChanged is wrong");
     });
 
   });
@@ -282,7 +433,6 @@ contract('Bridge', accounts => {
       assert.equal(newBrz.address, brzAddressInEvent, "brzAddressInEvent is wrong");
     });
   });
-
 
   describe('Roles', () => {
 
