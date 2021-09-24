@@ -3,9 +3,11 @@ const Bridge = artifacts.require("Bridge");
 
 const MonitorAddress = "0xff4dbdf4a43f5889fc24f112ea2b596d137cf1f7";
 const AdminAddress = "0xa52515946DAABe072f446Cc014a4eaA93fb9Fd79";
-const minGasPrice = 50000000000;    // 50gWei
+//const feePercentageBridge = 10
+//const gasAcceptTransfer = 100000;   // wei
+const minGasPrice = 50000000000;    // 50 gWei
 const quoteETH_BRZ = 120000000;     // 1 ETH = 12k BRZ
-const minTokenAmount = 3000000;      // 300 BRZ
+const minTokenAmount = 2500000;     // 250 BRZ
 
 module.exports = async (deployer, network, accounts)=> {
 
@@ -45,6 +47,9 @@ module.exports = async (deployer, network, accounts)=> {
   response = await bridge.getFeePercentageBridge();
   console.log("bridge.getFeePercentageBridge", response.toString());
 
+  // In constructor: gasAcceptTransfer = 100000;
+  response = await bridge.getGasAcceptTransfer();
+  console.log("bridge.getGasAcceptTransfer", response);
 
   console.log("\n addBlockchain");
   if (network == 'develop' || network == 'development') {
