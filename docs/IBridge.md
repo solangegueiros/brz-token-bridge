@@ -17,6 +17,24 @@
 
 
 
+### `getGasAcceptTransfer() → uint256` (external)
+
+
+
+
+
+### `getQuoteETH_BRZ() → uint256` (external)
+
+
+
+
+
+### `getMinBRZFee(string blockchainName) → uint256` (external)
+
+
+
+
+
 ### `getMinGasPrice(string blockchainName) → uint256` (external)
 
 
@@ -84,7 +102,25 @@
 
 
 
+### `GasAcceptTransferChanged(uint256 oldValue, uint256 newValue)`
+
+
+
+
+
+### `QuoteETH_BRZChanged(uint256 oldValue, uint256 newValue)`
+
+
+
+
+
 ### `TokenChanged(address tokenAddress)`
+
+
+
+
+
+### `MinBRZFeeChanged(string blockchainName, uint256 oldFee, uint256 newFee)`
 
 
 

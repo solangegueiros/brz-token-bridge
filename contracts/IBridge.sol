@@ -9,6 +9,15 @@ interface IBridge {
 
   function getFeePercentageBridge() external view returns (uint256);
 
+  function getGasAcceptTransfer() external view returns (uint256);
+
+  function getQuoteETH_BRZ() external view returns (uint256);
+
+  function getMinBRZFee(string calldata blockchainName)
+    external
+    view
+    returns (uint256);
+
   function getMinGasPrice(string calldata blockchainName)
     external
     view
@@ -58,7 +67,10 @@ interface IBridge {
     string toBlockchain
   );
   event FeePercentageBridgeChanged(uint256 oldFee, uint256 newFee);
+  event GasAcceptTransferChanged(uint256 oldValue, uint256 newValue);
+  event QuoteETH_BRZChanged(uint256 oldValue, uint256 newValue);
   event TokenChanged(address tokenAddress);
+  event MinBRZFeeChanged(string blockchainName, uint256 oldFee, uint256 newFee);
   event MinGasPriceChanged(
     string blockchainName,
     uint256 oldFee,

@@ -85,7 +85,7 @@ module.exports = {
         mnemonic: { phrase: mnemonic },
         providerOrUrl: 'https://public-node.testnet.rsk.co',
         numberOfAddresses: 10,
-        pollingInterval: 20e3 
+        pollingInterval: 25e3 
       }),
       network_id: 31,
       gasPrice: Math.floor(minimumGasPriceTestnet * 1.3),
@@ -93,7 +93,7 @@ module.exports = {
       //Source: https://dappsdev.org/blog/2021-02-24-how-to-configure-truffle-to-connect-to-rsk/
       // Higher polling interval to check for blocks less frequently
       // during deployment
-      deploymentPollingInterval: 20e3,  //15s = 15e3, default is 4e3
+      deploymentPollingInterval: 25e3,  //15s = 15e3, default is 4e3
       timeoutBlocks: 200,
       skipDryRun: true
     }

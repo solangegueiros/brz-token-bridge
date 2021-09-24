@@ -1,6 +1,6 @@
-// File: contracts\ozeppelin\utils\Context.sol
-
 // SPDX-License-Identifier: MIT
+
+// File: contracts\ozeppelin\utils\Context.sol
 
 pragma solidity ^0.8.0;
 
@@ -26,8 +26,6 @@ abstract contract Context {
 }
 
 // File: contracts\ozeppelin\utils\Strings.sol
-
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -100,8 +98,6 @@ library Strings {
 
 // File: contracts\ozeppelin\utils\introspection\IERC165.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.0;
 
 /**
@@ -126,8 +122,6 @@ interface IERC165 {
 }
 
 // File: contracts\ozeppelin\utils\introspection\ERC165.sol
-
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -162,8 +156,6 @@ abstract contract ERC165 is IERC165 {
 }
 
 // File: contracts\ozeppelin\access\AccessControl.sol
-
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -453,8 +445,6 @@ abstract contract AccessControl is Context, IAccessControl, ERC165 {
 
 // File: contracts\ozeppelin\security\Pausable.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.0;
 
 
@@ -545,8 +535,6 @@ abstract contract Pausable is Context {
 
 // File: contracts\ozeppelin\token\ERC20\IERC20.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.0;
 
 /**
@@ -632,7 +620,6 @@ interface IERC20 {
 
 // File: contracts\IBridge.sol
 
-// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 // IERC20.sol :  https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.1.0/contracts/token/ERC20/IERC20.sol
@@ -642,6 +629,15 @@ interface IBridge {
   function version() external pure returns (string memory);
 
   function getFeePercentageBridge() external view returns (uint256);
+
+  function getGasAcceptTransfer() external view returns (uint256);
+
+  function getQuoteETH_BRZ() external view returns (uint256);
+
+  function getMinBRZFee(string calldata blockchainName)
+    external
+    view
+    returns (uint256);
 
   function getMinGasPrice(string calldata blockchainName)
     external
@@ -692,7 +688,14 @@ interface IBridge {
     string toBlockchain
   );
   event FeePercentageBridgeChanged(uint256 oldFee, uint256 newFee);
+  event GasAcceptTransferChanged(uint256 oldValue, uint256 newValue);
+  event QuoteETH_BRZChanged(uint256 oldValue, uint256 newValue);
   event TokenChanged(address tokenAddress);
+  event MinBRZFeeChanged(
+    string blockchainName,
+    uint256 oldFee,
+    uint256 newFee
+  );
   event MinGasPriceChanged(
     string blockchainName,
     uint256 oldFee,
@@ -707,7 +710,6 @@ interface IBridge {
 
 // File: contracts\Bridge.sol
 
-// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 /// @title BRZ token Bridge
@@ -740,21 +742,25 @@ contract Bridge is AccessControl, IBridge, Pausable {
   address private constant ZERO_ADDRESS = address(0);
   bytes32 private constant NULL_HASH = bytes32(0);
   bytes32 public constant MONITOR_ROLE = keccak256("MONITOR_ROLE");
-  bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+  bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");  
 
   /**
    * @dev DECIMALPERCENT is the representation of 100% using (2) decimal places
    * 100.00 = percentage accuracy (2) to 100%
    */
   uint256 public constant DECIMALPERCENT = 10000;
+  uint256 public constant ETH_IN_WEI = 1000000000000000000;
 
   IERC20 public token;
-  uint256 private totalFeeReceivedBridge; //fee received per Bridge, not for transaction in other blockchain
-  uint256 private feePercentageBridge; //Include 2 decimal places
-  string[] public blockchain;
-  mapping(string => uint256) private minGasPrice;
+  uint256 private totalFeeReceivedBridge; // fee received per Bridge, not for transaction in other blockchain
+  uint256 private feePercentageBridge;  // Include 2 decimal places
+  uint256 private gasAcceptTransfer;    // in Wei - Estimative function acceptTransfer: 100000, it can change in EVM cost updates  
+  uint256 private quoteETH_BRZ;         // It can use a oracle in future versions
+  mapping(string => uint256) private minBRZFee; // quoteETH_BRZ * gasAcceptTransfer * minGasPrice
+  mapping(string => uint256) private minGasPrice; //in Wei
   mapping(string => uint256) private minTokenAmount;
   mapping(bytes32 => bool) public processed;
+  string[] public blockchain;
 
   /**
    * @dev Function called only when the smart contract is deployed.
@@ -770,7 +776,8 @@ contract Bridge is AccessControl, IBridge, Pausable {
   constructor(address tokenAddress) {
     _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     token = IERC20(tokenAddress);
-    feePercentageBridge = 10; //0.1%
+    feePercentageBridge = 10;   //0.1%
+    gasAcceptTransfer = 100000; //Estimative function acceptTransfer: 100000 wei
   }
 
   /**
@@ -870,17 +877,6 @@ contract Bridge is AccessControl, IBridge, Pausable {
    *
    * Returns: bool - true if it is sucessful.
    *
-   * #### More info about fees
-   *
-   * - Blockchain / transaction fee in BRL - it will be transfered from user's account,
-   * along with the amount he would like to receive in the account.
-   * This will be spent in `toBlockchain`.
-   * Does not depend of amount, but of destination blockchain.
-   *
-   * - Bridge Fee - it is deducted from the requested amount.
-   * It is a percentage of the requested amount.
-   * Cannot include the transaction fee in order to be calculated.
-   *
    * > Before call this function, the caller MUST have called function `approve` in BRZ token,
    * > allowing the bridge's smart contract address to use the BRZ tokens,
    * > calling the function `transferFrom`.
@@ -891,10 +887,11 @@ contract Bridge is AccessControl, IBridge, Pausable {
    * [eip-20#transferfrom](https://eips.ethereum.org/EIPS/eip-20#transferfrom)
    *
    * Requirements:
+   * - fee in BRZ (transactionFee[0]) must be at least (BRZFactorFee[blockchainName] * minGasPrice[toBlockchain]).
+   * - gasPrice (transactionFee[1]) in destiny blockchain (minor unit) greater than minGasPrice in toBlockchain.
    * - toBlockchain exists.
    * - toAddress is not an empty string.
-   * - gasPrice in destiny blockchain (minor unit) greater than minGasPrice in toBlockchain
-   * - amount must be greater than minTokenAmount in toBlockchain
+   * - amount must be greater than minTokenAmount in toBlockchain.
    * - amount greater than zero.
    *
    * Actions:
@@ -914,6 +911,33 @@ contract Bridge is AccessControl, IBridge, Pausable {
    * an external program which will
    * send the transaction on the destination blockchain.
    *
+   * #### More info about fees
+   *
+   * - Blockchain / transaction fee in BRL (transactionFee[0])
+   * It will be transfered from user's account,
+   * along with the amount he would like to receive in the account.
+   *
+   * This will be spent in `toBlockchain`.
+   * Does not depend of amount, but of destination blockchain.
+   *
+   * It must be at least the (BRZFactorFee * minGasPrice) per blockchain.
+   *
+   * > BRZFactorFee = 
+   * >
+   * > Estimative function acceptTransfer (100000)
+   * >
+   * >            x 
+   * >
+   * > Estimative ETH quote in BRZ in minor unit (4 decimal places).
+   *
+   * It is used in the function acceptTransfer,
+   * which can not accept a BRZ fee less than BRZFactorFee * minGasPrice (per blockchain).   
+   *
+   * - Bridge Fee - it is deducted from the requested amount.
+   * It is a percentage of the requested amount.
+   * Cannot include the transaction fee in order to be calculated.
+   * 
+   *
    */
   function receiveTokens(
     uint256 amount,
@@ -923,6 +947,11 @@ contract Bridge is AccessControl, IBridge, Pausable {
   ) external override whenNotPaused returns (bool) {
     require(existsBlockchain(toBlockchain), "Bridge: toBlockchain not exists");
     require(!compareStrings(toAddress, ""), "Bridge: toAddress is null");
+
+    require(
+      transactionFee[0] >= minBRZFee[toBlockchain],
+      "Bridge: feeBRZ is less than minimum"
+    );
     require(
       transactionFee[1] >= minGasPrice[toBlockchain],
       "Bridge: gasPrice is less than minimum"
@@ -1104,6 +1133,18 @@ contract Bridge is AccessControl, IBridge, Pausable {
   }
 
   /**
+   * @dev Returns token balance in bridge.
+   *
+   * Parameters: none
+   *
+   * Returns: integer amount of tokens in bridge
+   *
+   */
+  function getTokenBalance() external view override returns (uint256) {
+    return token.balanceOf(address(this));
+  }
+
+  /**
    * @dev Returns total of fees received by bridge.
    *
    * Parameters: none
@@ -1118,18 +1159,6 @@ contract Bridge is AccessControl, IBridge, Pausable {
     returns (uint256)
   {
     return totalFeeReceivedBridge;
-  }
-
-  /**
-   * @dev Returns token balance in bridge.
-   *
-   * Parameters: none
-   *
-   * Returns: integer amount of tokens in bridge
-   *
-   */
-  function getTokenBalance() external view override returns (uint256) {
-    return token.balanceOf(address(this));
   }
 
   /**
@@ -1251,7 +1280,163 @@ contract Bridge is AccessControl, IBridge, Pausable {
   }
 
   /**
+   * @dev This function allows a user to renounce a role
+   *
+   * Parameters: bytes32 role, address account
+   *
+   * Returns: none
+   *
+   * Requirements:
+   *
+   * - An owner can not renounce the role DEFAULT_ADMIN_ROLE.
+   * - Can only renounce roles for your own account.
+   *
+   */
+  function renounceRole(bytes32 role, address account) public virtual override {
+    require (role != DEFAULT_ADMIN_ROLE, "Bridge: can not renounce role owner");
+    require(account == _msgSender(), "Bridge: can only renounce roles for self");
+    super.renounceRole(role, account);
+  }
+
+
+  /**
+   * @dev This function allows to revoke a role
+   *
+   * Parameters: bytes32 role, address account
+   *
+   * Returns: none
+   *
+   * Requirements:
+   *
+   * - An owner can not revoke yourself in the role DEFAULT_ADMIN_ROLE.
+   *
+   */
+  function revokeRole(bytes32 role, address account)
+    public
+    virtual
+    override
+    onlyRole(getRoleAdmin(role))
+  {
+    if (role == DEFAULT_ADMIN_ROLE) {
+      require ( account != _msgSender(), "Bridge: can not revoke yourself in role owner");
+    }
+    super.revokeRole(role, account);
+  }
+
+  /**
    * @dev This function update the minimum blockchain fee - gas price - in the minor unit.
+   *
+   * It is an internal function, called when quoteETH_BRZ, gasAcceptTransfer 
+   * or minGasPrice[blockchainName] changed.
+   *
+   * Returns: bool - true if it is sucessful
+   *
+   * Emit the event `MinBRZFeeChanged(blockchain, oldFee, newFee)`.
+   *
+   */
+  function _updateMinBRZFee(string memory blockchainName) internal returns (bool)
+  {
+    // quoteETH_BRZ (1 ETH in BRZ)
+    if (!compareStrings(blockchainName, "")) {
+      uint256 newFee = gasAcceptTransfer * minGasPrice[blockchainName] * quoteETH_BRZ / ETH_IN_WEI;
+      emit MinBRZFeeChanged(
+        blockchainName,
+        minBRZFee[blockchainName],
+        newFee
+      );
+      minBRZFee[blockchainName] = newFee;
+    }
+    else {
+      for (uint8 i = 0; i < blockchain.length; i++) {
+        if (minGasPrice[blockchain[i]] > 0) {
+          uint256 newFee = gasAcceptTransfer * minGasPrice[blockchain[i]] * quoteETH_BRZ / ETH_IN_WEI;
+          emit MinBRZFeeChanged(
+            blockchainName,
+            minBRZFee[blockchain[i]],
+            newFee
+          );
+          minBRZFee[blockchain[i]] = newFee;
+        }
+      }
+    }
+    return true;
+  }
+
+  /**
+   * @dev Returns the quote of pair ETH / BRZ.
+   *
+   * (1 ETH = the amount of BRZ returned)
+   * 
+   * in BRZ in minor unit (4 decimal places).
+   *
+   * It is used to calculate minBRZFee in destination 
+   * which can not accept a BRZ fee less than minBRZFee (per blockchain).
+   *
+   * Returns: integer
+   *
+   */
+  function getQuoteETH_BRZ()
+    external
+    view
+    override
+    returns (uint256)
+  {
+    return quoteETH_BRZ;
+  }
+
+  /**
+   * @dev This function update quote of pair ETH / BRZ.
+   *
+   * (1 ETH = the amount of BRZ defined)
+   *
+   * Only admin can call it.
+   *
+   * Each time quoteETH_BRZ is updated, the MinBRZFee is updated too.
+   *
+   * Parameters: integer, the new quote
+   *
+   * Returns: bool - true if it is sucessful
+   *
+   * Emit the event `QuoteETH_BRZChanged(oldValue, newValue)`.
+   *
+   */
+  function setQuoteETH_BRZ(uint256 newValue)
+    public
+    onlyAdmin
+    returns (bool)
+  {
+    emit QuoteETH_BRZChanged(
+      quoteETH_BRZ,
+      newValue
+    );
+    quoteETH_BRZ = newValue;
+    require(_updateMinBRZFee(""), "Bridge: updateMinBRZFee error");
+    return true;
+  }
+
+  /**
+   * @dev Returns the minimum gas price to cross tokens.
+   *
+   * The function acceptTransfer can not accept less than the minimum gas price per blockchain.
+   *
+   * Parameters: string, blockchain name
+   *
+   * Returns: integer
+   *
+   */
+  function getMinGasPrice(string memory blockchainName)
+    external
+    view
+    override
+    returns (uint256)
+  {
+    return minGasPrice[blockchainName];
+  }
+
+  /**
+   * @dev This function update the minimum blockchain fee - gas price - in the minor unit.
+   *
+   * Each time setMinGasPrice is updated, the MinBRZFee is updated too.
    *
    * Only admin can call it.
    *
@@ -1280,26 +1465,105 @@ contract Bridge is AccessControl, IBridge, Pausable {
       newFee
     );
     minGasPrice[blockchainName] = newFee;
+    require(_updateMinBRZFee(blockchainName), "Bridge: updateMinBRZFee error");    
     return true;
   }
 
   /**
-   * @dev Returns the minimum gas price to cross tokens.
+   * @dev Returns the minimum destination blockchain fee in BRZ,
+   * in minor unit (4 decimal places)
+   * 
+   * It is updated when one of these itens be updated:
+   *  - gasAcceptTransfer
+   *  - quoteETH_BRZ
+   *  - minGasPrice per Blockchain 
    *
-   * The function acceptTransfer can not accpept less than the minimum gas price per blockchain.
+   * It is used in the function acceptTransfer,
+   * which can not accept a BRZ fee less than minBRZFee (per blockchain).
    *
    * Parameters: string, blockchain name
    *
    * Returns: integer
    *
    */
-  function getMinGasPrice(string memory blockchainName)
+  function getMinBRZFee(string memory blockchainName)
     external
     view
     override
     returns (uint256)
   {
-    return minGasPrice[blockchainName];
+    return minBRZFee[blockchainName];
+  }
+
+  /**
+   * @dev Returns an estimative of the gas amount used in function AcceptTransfer.
+   *
+   * (1 ETH = the amount of BRZ returned)
+   * 
+   * in BRZ in minor unit (4 decimal places).
+   *
+   * It is used to calculate minBRZFee in destination 
+   * which can not accept a BRZ fee less than minBRZFee (per blockchain).
+   *
+   * Returns: integer
+   *
+   */
+  function getGasAcceptTransfer()
+    external
+    view
+    override
+    returns (uint256)
+  {
+    return gasAcceptTransfer;
+  }
+
+  /**
+   * @dev This function update the estimative of the gas amount used in function AcceptTransfer.
+   *
+   * It will only change if happen some EVM cost update.
+   *
+   * Only owner can call it.
+   *
+   * Each time gasAcceptTransfer is updated, the MinBRZFee is updated too.
+   *
+   * Parameters: integer, the new gas amount
+   *
+   * Returns: bool - true if it is sucessful
+   *
+   * Emit the event `GasAcceptTransferChanged(oldValue, newValue)`.
+   *
+   */
+  function setGasAcceptTransfer(uint256 newValue)
+    public
+    onlyOwner
+    returns (bool)
+  {
+    emit GasAcceptTransferChanged(
+      gasAcceptTransfer,
+      newValue
+    );
+    gasAcceptTransfer = newValue;
+    require(_updateMinBRZFee(""), "Bridge: updateMinBRZFee error");
+    return true;
+  }
+
+  /**
+   * @dev Returns the minimum token amount to cross.
+   *
+   * The function acceptTransfer can not accpept less than the minimum per blockchain.
+   *
+   * Parameters: string, blockchain name
+   *
+   * Returns: integer
+   *
+   */
+  function getMinTokenAmount(string memory blockchainName)
+    external
+    view
+    override
+    returns (uint256)
+  {
+    return minTokenAmount[blockchainName];
   }
 
   /**
@@ -1336,22 +1600,18 @@ contract Bridge is AccessControl, IBridge, Pausable {
   }
 
   /**
-   * @dev Returns the minimum token amount to cross.
+   * @dev Returns the fee percentage bridge.
    *
-   * The function acceptTransfer can not accpept less than the minimum per blockchain.
+   * For each amount received in the bridge, a fee percentage is discounted.
+   * This function returns this fee percentage bridge.
    *
-   * Parameters: string, blockchain name
+   * Parameters: none
    *
    * Returns: integer
    *
    */
-  function getMinTokenAmount(string memory blockchainName)
-    external
-    view
-    override
-    returns (uint256)
-  {
-    return minTokenAmount[blockchainName];
+  function getFeePercentageBridge() external view override returns (uint256) {
+    return feePercentageBridge;
   }
 
   /**
@@ -1381,21 +1641,6 @@ contract Bridge is AccessControl, IBridge, Pausable {
     emit FeePercentageBridgeChanged(feePercentageBridge, newFee);
     feePercentageBridge = newFee;
     return true;
-  }
-
-  /**
-   * @dev Returns the fee percentage bridge.
-   *
-   * For each amount received in the bridge, a fee percentage is discounted.
-   * This function returns this fee percentage bridge.
-   *
-   * Parameters: none
-   *
-   * Returns: integer
-   *
-   */
-  function getFeePercentageBridge() external view override returns (uint256) {
-    return feePercentageBridge;
   }
 
   /**

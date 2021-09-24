@@ -3,7 +3,7 @@ const Bridge = artifacts.require("Bridge");
 const truffleAssertions = require('truffle-assertions');
 
 const { lp, DEFAULT_ADMIN_ROLE, ZERO_ADDRESS, ZERO_BYTES32, version, 
-  DECIMALPERCENT, feePercentageBridge, minGasPrice, feeETH, feeBRL, amount, minAmount } = require('../test/data');
+  DECIMALPERCENT, feePercentageBridge, gasAcceptTransfer, minGasPrice, quoteETH_BRZ, amount, minAmount } = require('./data');
 let MONITOR_ROLE;
 let ADMIN_ROLE;
 
@@ -16,6 +16,8 @@ contract('Bridge', accounts => {
   const toAddress = accountReceiver;
   let feePercentageBridge;
   let gasPrice = minGasPrice;
+  let minBRZFee;
+  //let feeBRZ = web3.utils.fromWei((gasAcceptTransfer * minGasPrice).toString(), "ether") * quoteETH_BRZ ;
 
   let eventCrossRequest;
   let receiver;
@@ -37,6 +39,7 @@ contract('Bridge', accounts => {
 
     feePercentageBridge = await bridge.getFeePercentageBridge({from: anyAccount});
     if (lp) console.log("feePercentageBridge: " + feePercentageBridge);
+    await bridge.setGasAcceptTransfer(gasAcceptTransfer, {from: owner});
 
     //Blockchains
     await bridge.addBlockchain("BinanceSmartChainTestnet", {from: owner});
@@ -53,6 +56,8 @@ contract('Bridge', accounts => {
     //Because the Ethereum blockchain has high fees, it will be used here.
     await bridge.setMinGasPrice("EthereumRinkeby", minGasPrice, {from: admin});
     await bridge.setMinTokenAmount("EthereumRinkeby", minAmount, {from: admin});
+    await bridge.setQuoteETH_BRZ(quoteETH_BRZ, {from: admin});    
+    minBRZFee =  (await bridge.getMinBRZFee("EthereumRinkeby", {from: anyAccount})) * 1;
   });
 
   beforeEach('test', async () => {
@@ -63,7 +68,7 @@ contract('Bridge', accounts => {
     await brz.approve(bridge.address, amount*2, {from: accountSender} );
 
     // console.log("bridge.receiveTokens");
-    response = await bridge.receiveTokens(amount, [feeBRL, gasPrice], toBlockchain, toAddress, {from: accountSender});
+    response = await bridge.receiveTokens(amount, [minBRZFee, gasPrice], toBlockchain, toAddress, {from: accountSender});
     eventCrossRequest = response.logs[0];
 
     receiver = eventCrossRequest.args[3];
@@ -190,7 +195,12 @@ contract('Bridge', accounts => {
     });
     
     it('monitor can not acceptTransfer for same transaction twice', async () => {
-      await bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
+      if (eventToFee > 0) {        
+        await bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor, gasPrice: eventToFee})
+      }
+      else {
+        await bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
+      }      
       await truffleAssertions.fails(
         bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
         , "Bridge: already processed");
@@ -200,7 +210,12 @@ contract('Bridge', accounts => {
       balanceBefore = (await brz.balanceOf(bridge.address, {from: anyAccount})).toNumber();
       if (lp) console.log("\n brz.balanceOf Bridge before", balanceBefore);
 
-      await bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
+      if (eventToFee > 0) {        
+        await bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor, gasPrice: eventToFee})
+      }
+      else {
+        await bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
+      }
 
       balanceAfter = (await brz.balanceOf(bridge.address, {from: anyAccount})).toNumber();
       if (lp) console.log("\n brz.balanceOf Bridge after", balanceAfter);
@@ -212,8 +227,13 @@ contract('Bridge', accounts => {
       balanceBefore = (await brz.balanceOf(receiver, {from: anyAccount})).toNumber();
       if (lp) console.log("\n brz.balanceOf receiver before", balanceBefore);
 
-      await bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
-
+      if (eventToFee > 0) {        
+        await bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor, gasPrice: eventToFee})
+      }
+      else {
+        await bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
+      }
+      
       balanceAfter = (await brz.balanceOf(receiver, {from: anyAccount})).toNumber();
       if (lp) console.log("\n brz.balanceOf receiver after", balanceAfter);
 

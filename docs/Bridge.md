@@ -104,17 +104,6 @@ This is a string because some blockchain could not have the same pattern from Et
 
 Returns: bool - true if it is sucessful.
 
-#### More info about fees
-
-- Blockchain / transaction fee in BRL - it will be transfered from user's account,
-along with the amount he would like to receive in the account.
-This will be spent in `toBlockchain`.
-Does not depend of amount, but of destination blockchain.
-
-- Bridge Fee - it is deducted from the requested amount.
-It is a percentage of the requested amount.
-Cannot include the transaction fee in order to be calculated.
-
 > Before call this function, the caller MUST have called function `approve` in BRZ token,
 > allowing the bridge's smart contract address to use the BRZ tokens,
 > calling the function `transferFrom`.
@@ -125,10 +114,11 @@ ERC-20 tokens approve and transferFrom pattern:
 [eip-20#transferfrom](https://eips.ethereum.org/EIPS/eip-20#transferfrom)
 
 Requirements:
+- fee in BRZ (transactionFee[0]) must be at least (BRZFactorFee[blockchainName] * minGasPrice[toBlockchain]).
+- gasPrice (transactionFee[1]) in destiny blockchain (minor unit) greater than minGasPrice in toBlockchain.
 - toBlockchain exists.
 - toAddress is not an empty string.
-- gasPrice in destiny blockchain (minor unit) greater than minGasPrice in toBlockchain
-- amount must be greater than minTokenAmount in toBlockchain
+- amount must be greater than minTokenAmount in toBlockchain.
 - amount greater than zero.
 
 Actions:
@@ -147,6 +137,33 @@ Actions:
 > The `CrossRequest` event is very important because it must be listened by the monitor,
 an external program which will
 send the transaction on the destination blockchain.
+
+#### More info about fees
+
+- Blockchain / transaction fee in BRL (transactionFee[0])
+It will be transfered from user's account,
+along with the amount he would like to receive in the account.
+
+This will be spent in `toBlockchain`.
+Does not depend of amount, but of destination blockchain.
+
+It must be at least the (BRZFactorFee * minGasPrice) per blockchain.
+
+> BRZFactorFee =
+>
+> Estimative function acceptTransfer (100000)
+>
+>            x
+>
+> Estimative ETH quote in BRZ in minor unit (4 decimal places).
+
+It is used in the function acceptTransfer,
+which can not accept a BRZ fee less than BRZFactorFee * minGasPrice (per blockchain).
+
+- Bridge Fee - it is deducted from the requested amount.
+It is a percentage of the requested amount.
+Cannot include the transaction fee in order to be calculated.
+
 
 
 ### `getTransactionId(bytes32[2] hashes, address receiver, uint256 amount, uint32 logIndex) → bytes32` (public)
@@ -216,17 +233,6 @@ Actions:
   - transfer the amount tokens to destination address
 
 
-### `getTotalFeeReceivedBridge() → uint256` (external)
-
-
-
-Returns total of fees received by bridge.
-
-Parameters: none
-
-Returns: integer
-
-
 ### `getTokenBalance() → uint256` (external)
 
 
@@ -236,6 +242,17 @@ Returns token balance in bridge.
 Parameters: none
 
 Returns: integer amount of tokens in bridge
+
+
+### `getTotalFeeReceivedBridge() → uint256` (external)
+
+
+
+Returns total of fees received by bridge.
+
+Parameters: none
+
+Returns: integer
 
 
 ### `withdrawToken(uint256 amount) → bool` (external)
@@ -320,11 +337,106 @@ Parameters: address of admin to be excluded
 Returns: bool - true if it is sucessful
 
 
+### `renounceRole(bytes32 role, address account)` (public)
+
+
+
+This function allows a user to renounce a role
+
+Parameters: bytes32 role, address account
+
+Returns: none
+
+Requirements:
+
+- An owner can not renounce the role DEFAULT_ADMIN_ROLE.
+- Can only renounce roles for your own account.
+
+
+### `revokeRole(bytes32 role, address account)` (public)
+
+
+
+This function allows to revoke a role
+
+Parameters: bytes32 role, address account
+
+Returns: none
+
+Requirements:
+
+- An owner can not revoke yourself in the role DEFAULT_ADMIN_ROLE.
+
+
+### `_updateMinBRZFee(string blockchainName) → bool` (internal)
+
+
+
+This function update the minimum blockchain fee - gas price - in the minor unit.
+
+It is an internal function, called when quoteETH_BRZ, gasAcceptTransfer
+or minGasPrice[blockchainName] changed.
+
+Returns: bool - true if it is sucessful
+
+Emit the event `MinBRZFeeChanged(blockchain, oldFee, newFee)`.
+
+
+### `getQuoteETH_BRZ() → uint256` (external)
+
+
+
+Returns the quote of pair ETH / BRZ.
+
+(1 ETH = the amount of BRZ returned)
+
+in BRZ in minor unit (4 decimal places).
+
+It is used to calculate minBRZFee in destination
+which can not accept a BRZ fee less than minBRZFee (per blockchain).
+
+Returns: integer
+
+
+### `setQuoteETH_BRZ(uint256 newValue) → bool` (public)
+
+
+
+This function update quote of pair ETH / BRZ.
+
+(1 ETH = the amount of BRZ defined)
+
+Only admin can call it.
+
+Each time quoteETH_BRZ is updated, the MinBRZFee is updated too.
+
+Parameters: integer, the new quote
+
+Returns: bool - true if it is sucessful
+
+Emit the event `QuoteETH_BRZChanged(oldValue, newValue)`.
+
+
+### `getMinGasPrice(string blockchainName) → uint256` (external)
+
+
+
+Returns the minimum gas price to cross tokens.
+
+The function acceptTransfer can not accept less than the minimum gas price per blockchain.
+
+Parameters: string, blockchain name
+
+Returns: integer
+
+
 ### `setMinGasPrice(string blockchainName, uint256 newFee) → bool` (public)
 
 
 
 This function update the minimum blockchain fee - gas price - in the minor unit.
+
+Each time setMinGasPrice is updated, the MinBRZFee is updated too.
 
 Only admin can call it.
 
@@ -340,13 +452,68 @@ Requirements:
 Emit the event `MinGasPriceChanged(blockchain, oldFee, newFee)`.
 
 
-### `getMinGasPrice(string blockchainName) → uint256` (external)
+### `getMinBRZFee(string blockchainName) → uint256` (external)
 
 
 
-Returns the minimum gas price to cross tokens.
+Returns the minimum destination blockchain fee in BRZ,
+in minor unit (4 decimal places)
 
-The function acceptTransfer can not accpept less than the minimum gas price per blockchain.
+It is updated when one of these itens be updated:
+ - gasAcceptTransfer
+ - quoteETH_BRZ
+ - minGasPrice per Blockchain
+
+It is used in the function acceptTransfer,
+which can not accept a BRZ fee less than minBRZFee (per blockchain).
+
+Parameters: string, blockchain name
+
+Returns: integer
+
+
+### `getGasAcceptTransfer() → uint256` (external)
+
+
+
+Returns an estimative of the gas amount used in function AcceptTransfer.
+
+(1 ETH = the amount of BRZ returned)
+
+in BRZ in minor unit (4 decimal places).
+
+It is used to calculate minBRZFee in destination
+which can not accept a BRZ fee less than minBRZFee (per blockchain).
+
+Returns: integer
+
+
+### `setGasAcceptTransfer(uint256 newValue) → bool` (public)
+
+
+
+This function update the estimative of the gas amount used in function AcceptTransfer.
+
+It will only change if happen some EVM cost update.
+
+Only owner can call it.
+
+Each time gasAcceptTransfer is updated, the MinBRZFee is updated too.
+
+Parameters: integer, the new gas amount
+
+Returns: bool - true if it is sucessful
+
+Emit the event `GasAcceptTransferChanged(oldValue, newValue)`.
+
+
+### `getMinTokenAmount(string blockchainName) → uint256` (external)
+
+
+
+Returns the minimum token amount to cross.
+
+The function acceptTransfer can not accpept less than the minimum per blockchain.
 
 Parameters: string, blockchain name
 
@@ -373,15 +540,16 @@ Requirements:
 Emit the event `MinTokenAmountChanged(blockchain, oldMinimumAmount, newMinimumAmount)`.
 
 
-### `getMinTokenAmount(string blockchainName) → uint256` (external)
+### `getFeePercentageBridge() → uint256` (external)
 
 
 
-Returns the minimum token amount to cross.
+Returns the fee percentage bridge.
 
-The function acceptTransfer can not accpept less than the minimum per blockchain.
+For each amount received in the bridge, a fee percentage is discounted.
+This function returns this fee percentage bridge.
 
-Parameters: string, blockchain name
+Parameters: none
 
 Returns: integer
 
@@ -404,20 +572,6 @@ Requirements:
 - The new fee must be lower than 10% .
 
 Emit the event `FeePercentageBridgeChanged(oldFee, newFee)`.
-
-
-### `getFeePercentageBridge() → uint256` (external)
-
-
-
-Returns the fee percentage bridge.
-
-For each amount received in the bridge, a fee percentage is discounted.
-This function returns this fee percentage bridge.
-
-Parameters: none
-
-Returns: integer
 
 
 ### `setToken(address tokenAddress) → bool` (external)
