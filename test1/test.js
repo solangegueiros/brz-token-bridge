@@ -3,7 +3,7 @@ const Bridge = artifacts.require("Bridge");
 const truffleAssertions = require('truffle-assertions');
 
 const { lp, DEFAULT_ADMIN_ROLE, ZERO_ADDRESS, ZERO_BYTES32, version, 
-  DECIMALPERCENT, feePercentageBridge, gasAcceptTransfer, minGasPrice, quoteETH_BRZ, amount, minAmount } = require('./data');
+  DECIMALPERCENT, feePercentageBridge, gasAcceptTransfer, minGasPrice, quoteETH_BRZ, amount, minAmount } = require('../test/data');
 let MONITOR_ROLE;
 let ADMIN_ROLE;
 let blockchainName = "blockchainName";
@@ -38,49 +38,48 @@ contract('Bridge', accounts => {
     });
 
     it('minBRZFee updated after setMinGasPrice', async () => {
-      //minBRZFee = quoteETH_BRZ * gasAcceptTransfer * minGasPrice
+      //minBRZFee = gasAcceptTransfer * minGasPrice * quoteETH_BRZ / ETH_to_WEI
       await bridge.setGasAcceptTransfer(gasAcceptTransfer, {from: owner});
       await bridge.setQuoteETH_BRZ(quoteETH_BRZ, {from: admin});
 
       await bridge.setMinGasPrice(blockchainName, minGasPrice, {from: admin});
       minBRZFeeAfter = (await bridge.getMinBRZFee(blockchainName, {from: anyAccount})) * 1;
       console.log ("minBRZFeeAfter \t", minBRZFeeAfter);
-      let auxMinGasPrice = (await bridge.getMinGasPrice(blockchainName, {from: anyAccount})).toNumber();
-      console.log ("auxMinGasPrice \t", auxMinGasPrice);
-      minBRZFeeExpected = web3.utils.fromWei(
-        auxMinGasPrice * gasAcceptTransfer
-        , "ether").toNumber();
-      console.log ("Aux minBRZFeeExpected \t", minBRZFeeExpected);
-      minBRZFeeExpected = minBRZFeeExpected   * quoteETH_BRZ;
+      aux = ((await bridge.getMinGasPrice(blockchainName, {from: anyAccount})) * gasAcceptTransfer).toString();
+      console.log ("auxMinGasPrice * gasAcceptTransfer \t", aux);
+      minBRZFeeExpected = web3.utils.fromWei(aux, "ether") * quoteETH_BRZ;
       console.log ("minBRZFeeExpected \t", minBRZFeeExpected);
 
       assert.equal(minBRZFeeAfter, minBRZFeeExpected, "minBRZFee is wrong after setMinGasPrice");
-    });    
-/*
+    });
+    
     it('minBRZFee updated after setQuoteETH_BRZ', async () => {
-      //minBRZFee = quoteETH_BRZ * gasAcceptTransfer * minGasPrice
+      //minBRZFee = gasAcceptTransfer * minGasPrice * quoteETH_BRZ / ETH_to_WEI
       await bridge.setMinGasPrice(blockchainName, minGasPrice, {from: admin});
       await bridge.setGasAcceptTransfer(gasAcceptTransfer, {from: owner});
 
       await bridge.setQuoteETH_BRZ(quoteETH_BRZ, {from: admin});
       minBRZFeeAfter = (await bridge.getMinBRZFee(blockchainName, {from: anyAccount})) * 1;
-      minBRZFeeExpected = gasAcceptTransfer * minGasPrice *  (await bridge.getQuoteETH_BRZ({from: anyAccount}));
+
+      aux = ((await bridge.getMinGasPrice(blockchainName, {from: anyAccount})) * gasAcceptTransfer).toString();
+      minBRZFeeExpected = web3.utils.fromWei(aux, "ether") * (await bridge.getQuoteETH_BRZ({from: anyAccount}));
 
       assert.equal(minBRZFeeAfter, minBRZFeeExpected, "minBRZFee is wrong after setQuoteETH_BRZ");
-    });    
-  
+    }); 
+       
     it('minBRZFee updated after setGasAcceptTransfer', async () => {
-      //minBRZFee = quoteETH_BRZ * gasAcceptTransfer * minGasPrice
+      //minBRZFee = gasAcceptTransfer * minGasPrice * quoteETH_BRZ / ETH_to_WEI
       await bridge.setQuoteETH_BRZ(quoteETH_BRZ, {from: admin});
       await bridge.setMinGasPrice(blockchainName, minGasPrice, {from: admin});
 
       await bridge.setGasAcceptTransfer(gasAcceptTransfer, {from: owner});
       minBRZFeeAfter = (await bridge.getMinBRZFee(blockchainName, {from: anyAccount})) * 1;
-      minBRZFeeExpected = quoteETH_BRZ * minGasPrice * (await bridge.getGasAcceptTransfer({from: anyAccount})); 
+      aux = ((await bridge.getGasAcceptTransfer({from: anyAccount})) * minGasPrice).toString();
+      minBRZFeeExpected = web3.utils.fromWei(aux, "ether") * quoteETH_BRZ;
 
       assert.equal(minBRZFeeAfter, minBRZFeeExpected, "minBRZFee is wrong after setMinGasPrice");
     });
-*/        
+
   });
 
 

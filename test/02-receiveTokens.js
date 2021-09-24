@@ -9,15 +9,15 @@ let ADMIN_ROLE;
 
 contract('Bridge', accounts => {
 
-  const [owner, owner2, monitor, monitor2, admin, admin2, accountSender, accountReceiver, anyAccount] = accounts;
+  const [owner, monitor, admin, accountSender, accountReceiver, anyAccount] = accounts;
   if (lp) console.log ("\n accounts: \n", accounts, "\n");
 
   const toBlockchain = "EthereumRinkeby";
   const toAddress = accountReceiver;
   let feePercentageBridge;
   let gasPrice = minGasPrice;
-  let feeBRL = gasAcceptTransfer * quoteETH_BRZ * minGasPrice;
-  let minBRZFee;  
+  let minBRZFee;
+  //let feeBRZ = web3.utils.fromWei((gasAcceptTransfer * minGasPrice).toString(), "ether") * quoteETH_BRZ ;
 
   before(async () => {
     brz = await BRZToken.new({ from: owner });
@@ -61,34 +61,33 @@ contract('Bridge', accounts => {
     // transactionFee[1] - gasFee in destiny currency - minor unit
 
     it('receiveTokens', async () => {
-      truffleAssertions.passes(bridge.receiveTokens(amount, [feeBRL, gasPrice], toBlockchain, toAddress, {from: accountSender}));
+      truffleAssertions.passes(bridge.receiveTokens(amount, [minBRZFee, gasPrice], toBlockchain, toAddress, {from: accountSender}));
     });
 
-/*
     it('Should fail if toBlockchain is empty', async () => {      
       truffleAssertions.fails(
-        bridge.receiveTokens(amount, [feeBRL, gasPrice], "", toAddress, {from: accountSender}),
+        bridge.receiveTokens(amount, [minBRZFee, gasPrice], "", toAddress, {from: accountSender}),
         "Bridge: toBlockchain not exists"
       );
     });
 
     it('Should fail to an unlisted blockchain', async () => { 
       truffleAssertions.fails(
-        bridge.receiveTokens(amount, [feeBRL, gasPrice], "unlistedBlockchain", toAddress, {from: accountSender}),
+        bridge.receiveTokens(amount, [minBRZFee, gasPrice], "unlistedBlockchain", toAddress, {from: accountSender}),
         "Bridge: toBlockchain not exists"
       );
     });
 
     it('Should fail if toAddress is empty', async () => {      
       truffleAssertions.fails(
-        bridge.receiveTokens(amount, [feeBRL, gasPrice], toBlockchain, "", {from: accountSender}),
+        bridge.receiveTokens(amount, [minBRZFee, gasPrice], toBlockchain, "", {from: accountSender}),
         "Bridge: toAddress is null"
       );
     });
 
     it('Should fail if gasPrice is less than minGasPrice', async () => {      
       truffleAssertions.fails(
-        bridge.receiveTokens(amount, [feeBRL, gasPrice-1], toBlockchain, toAddress, {from: accountSender}),
+        bridge.receiveTokens(amount, [minBRZFee, gasPrice-1], toBlockchain, toAddress, {from: accountSender}),
         "Bridge: gasPrice is less than minimum"
       );
     });
@@ -96,50 +95,49 @@ contract('Bridge', accounts => {
     it('Should fail if BRZFee is less than minBRZFee', async () => {      
       truffleAssertions.fails(
         bridge.receiveTokens(amount, [minBRZFee-1, gasPrice], toBlockchain, toAddress, {from: accountSender}),
-        "Bridge: gasPrice is less than minimum"
+        "Bridge: feeBRZ is less than minimum"
       );
     });
 
     it('Should fail if amount is zero even if minAmount is zero too', async () => {
       // minAmount in RSKTestnet is 0
       truffleAssertions.fails(
-        bridge.receiveTokens(0, [feeBRL, gasPrice], "RSKTestnet", toAddress, {from: accountSender}),
+        bridge.receiveTokens(0, [minBRZFee, gasPrice], "RSKTestnet", toAddress, {from: accountSender}),
         "Bridge: amount is 0"
       );
     });
 
     it('Should fail if amount is zero when minAmount is greater than zero', async () => {
       truffleAssertions.fails(
-        bridge.receiveTokens(0, [feeBRL, gasPrice], toBlockchain, toAddress, {from: accountSender}),
+        bridge.receiveTokens(0, [minBRZFee, gasPrice], toBlockchain, toAddress, {from: accountSender}),
         "Bridge: amount is 0"
       );
     });
 
     it('Should fail if amount is less than minAmount', async () => {
       truffleAssertions.fails(
-        bridge.receiveTokens((minAmount-1), [feeBRL, gasPrice], toBlockchain, toAddress, {from: accountSender}),
+        bridge.receiveTokens((minAmount-1), [minBRZFee, gasPrice], toBlockchain, toAddress, {from: accountSender}),
         "Bridge: amount is less than minimum"
       );
     });
 
     it('Should passes if toAddress is zero address because we do not know the pattern in toBlockchain', async () => {      
       truffleAssertions.passes(
-        bridge.receiveTokens(amount, [feeBRL, gasPrice], toBlockchain, ZERO_ADDRESS, {from: accountSender})
+        bridge.receiveTokens(amount, [minBRZFee, gasPrice], toBlockchain, ZERO_ADDRESS, {from: accountSender})
       );
     });
-*/
-  });
 
-/*  
+  });
+ 
   describe('Simulation: receive Tokens from RSK to ETH', () => {
 
     it('accountSender BRZ balance decreased after receiveTokens', async () => {
       balanceBefore = (await brz.balanceOf(accountSender, {from: anyAccount})).toNumber();
       if (lp) console.log("\n brz.balanceOf accountSender before", balanceBefore);
 
-      await bridge.receiveTokens(amount, [feeBRL, gasPrice], toBlockchain, toAddress, {from: accountSender})
+      await bridge.receiveTokens(amount, [minBRZFee, gasPrice], toBlockchain, toAddress, {from: accountSender})
       //The total amount is the amount desired plus the blockchain fee to destination, in BRZ
-      totalAmount = amount + feeBRL;
+      totalAmount = amount + minBRZFee;
 
       balanceAfter = (await brz.balanceOf(accountSender, {from: anyAccount})).toNumber();
       if (lp) console.log("\n brz.balanceOf accountSender after", balanceAfter);
@@ -151,9 +149,9 @@ contract('Bridge', accounts => {
       balanceBefore = (await brz.balanceOf(bridge.address, {from: anyAccount})).toNumber();
       if (lp) console.log("\n brz.balanceOf Bridge before", balanceBefore);
 
-      await bridge.receiveTokens(amount, [feeBRL, gasPrice], toBlockchain, toAddress, {from: accountSender})
+      await bridge.receiveTokens(amount, [minBRZFee, gasPrice], toBlockchain, toAddress, {from: accountSender})
       //The total amount is the amount desired plus the blockchain fee to destination, in BRZ
-      totalAmount = amount + feeBRL;
+      totalAmount = amount + minBRZFee;
 
       balanceAfter = (await brz.balanceOf(bridge.address, {from: anyAccount})).toNumber();
       if (lp) console.log("\n brz.balanceOf Bridge after", balanceAfter);
@@ -165,9 +163,9 @@ contract('Bridge', accounts => {
       balanceBefore = (await bridge.getTokenBalance({from: anyAccount})).toNumber();
       if (lp) console.log("\n bridge.getTokenBalance Bridge before", balanceBefore);
 
-      await bridge.receiveTokens(amount, [feeBRL, gasPrice], toBlockchain, toAddress, {from: accountSender})
+      await bridge.receiveTokens(amount, [minBRZFee, gasPrice], toBlockchain, toAddress, {from: accountSender})
       //The total amount is the amount desired plus the blockchain fee to destination, in BRZ
-      totalAmount = amount + feeBRL;
+      totalAmount = amount + minBRZFee;
 
       balanceAfter = (await bridge.getTokenBalance({from: anyAccount})).toNumber();
       if (lp) console.log("\n bridge.getTokenBalance after", balanceAfter);
@@ -179,7 +177,7 @@ contract('Bridge', accounts => {
       balanceBefore = (await bridge.getTotalFeeReceivedBridge({from: anyAccount})).toNumber();
       if (lp) console.log("\n bridge.totalFeeReceivedBridge before", balanceBefore);
 
-      response = await bridge.receiveTokens(amount, [feeBRL, gasPrice], toBlockchain, toAddress, {from: accountSender})
+      response = await bridge.receiveTokens(amount, [minBRZFee, gasPrice], toBlockchain, toAddress, {from: accountSender})
       eventCrossRequest = response.logs[0];
       if (lp) console.log("\n eventCrossRequest\n", eventCrossRequest); 
 
@@ -193,7 +191,7 @@ contract('Bridge', accounts => {
     });
 
     it('amount in CrossRequest event was disconted from bridgeFee', async () => {
-      response = await bridge.receiveTokens(amount, [feeBRL, gasPrice], toBlockchain, toAddress, {from: accountSender})
+      response = await bridge.receiveTokens(amount, [minBRZFee, gasPrice], toBlockchain, toAddress, {from: accountSender})
       eventCrossRequest = response.logs[0];
       eventAmount = eventCrossRequest.args[1].toNumber();
       bridgeFee = amount * feePercentageBridge / DECIMALPERCENT;
@@ -204,7 +202,7 @@ contract('Bridge', accounts => {
     it('receiveTokens should fails when bridge is paused', async () => {
       await bridge.pause({ from: owner });
       await truffleAssertions.fails(
-        bridge.receiveTokens(amount, [feeBRL, gasPrice], toBlockchain, toAddress, {from: accountSender})
+        bridge.receiveTokens(amount, [minBRZFee, gasPrice], toBlockchain, toAddress, {from: accountSender})
         , 'Pausable: paused');
       
       await bridge.unpause({ from: owner });
@@ -212,13 +210,13 @@ contract('Bridge', accounts => {
 
   });
 
-/*
+
   describe('event CrossRequest', () => {
     let transaction;
     let eventCrossRequest;
 
     beforeEach('test', async () => {
-      transaction = await bridge.receiveTokens(amount, [feeBRL, gasPrice], toBlockchain, toAddress, {from: accountSender});
+      transaction = await bridge.receiveTokens(amount, [minBRZFee, gasPrice], toBlockchain, toAddress, {from: accountSender});
       eventCrossRequest = transaction.logs[0];
     });
 
@@ -274,5 +272,5 @@ contract('Bridge', accounts => {
     });
     
   });
-*/
+
 });

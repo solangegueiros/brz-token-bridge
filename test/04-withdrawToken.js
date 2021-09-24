@@ -3,7 +3,7 @@ const Bridge = artifacts.require("Bridge");
 const truffleAssertions = require('truffle-assertions');
 
 const { lp, DEFAULT_ADMIN_ROLE, ZERO_ADDRESS, ZERO_BYTES32, version, 
-  DECIMALPERCENT, feePercentageBridge, minGasPrice, feeETH, feeBRL, amount, minAmount } = require('../test/data');
+  DECIMALPERCENT, feePercentageBridge, gasAcceptTransfer, minGasPrice, quoteETH_BRZ, amount, minAmount } = require('../test/data');
 let MONITOR_ROLE;
 let ADMIN_ROLE;
 
@@ -12,9 +12,12 @@ contract('Bridge', accounts => {
   const [owner, monitor, admin, accountSender, accountReceiver, anyAccount] = accounts;
   if (lp) console.log ("\n accounts: \n", accounts, "\n");
 
-  const toBlockchain = "EthereumRinkeby";
+  const toBlockchain = "EthereumRinkeby";  
+  const toAddress = accountReceiver;
   let feePercentageBridge;
-  let gasPrice = minGasPrice;  
+  let gasPrice = minGasPrice;
+  let minBRZFee;
+  //let feeBRZ = web3.utils.fromWei((gasAcceptTransfer * minGasPrice).toString(), "ether") * quoteETH_BRZ ;
 
   before(async () => {
     brz = await BRZToken.new({ from: owner });
@@ -25,6 +28,7 @@ contract('Bridge', accounts => {
 
     feePercentageBridge = await bridge.getFeePercentageBridge({from: anyAccount});
     if (lp) console.log("feePercentageBridge: " + feePercentageBridge);
+    await bridge.setGasAcceptTransfer(gasAcceptTransfer, {from: owner});
 
     //Blockchains
     await bridge.addBlockchain("BinanceSmartChainTestnet", {from: owner});
@@ -41,6 +45,8 @@ contract('Bridge', accounts => {
     //Because the Ethereum blockchain has high fees, it will be used here.
     await bridge.setMinGasPrice("EthereumRinkeby", minGasPrice, {from: admin});
     await bridge.setMinTokenAmount("EthereumRinkeby", minAmount, {from: admin});
+    await bridge.setQuoteETH_BRZ(quoteETH_BRZ, {from: admin});    
+    minBRZFee =  (await bridge.getMinBRZFee("EthereumRinkeby", {from: anyAccount})) * 1;
   });
 
   beforeEach('test', async () => {
@@ -53,7 +59,7 @@ contract('Bridge', accounts => {
     //Add extra funds to bridge
     await brz.mint(bridge.address, amount*2, {from: owner} );
 
-    response = await bridge.receiveTokens(amount, [feeBRL, gasPrice], toBlockchain, accountReceiver, {from: accountSender});
+    response = await bridge.receiveTokens(amount, [minBRZFee, gasPrice], toBlockchain, accountReceiver, {from: accountSender});
   });
 
   console.log("\n\n");
