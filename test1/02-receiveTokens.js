@@ -3,7 +3,7 @@ const Bridge = artifacts.require("Bridge");
 const truffleAssertions = require('truffle-assertions');
 
 const { lp, DEFAULT_ADMIN_ROLE, ZERO_ADDRESS, ZERO_BYTES32, version, 
-  DECIMALPERCENT, feePercentageBridge, minGasPrice, feeETH, feeBRL, amount, minAmount } = require('../test/data');
+  DECIMALPERCENT, feePercentageBridge, gasAcceptTransfer, minGasPrice, quoteETH_BRZ, amount, minAmount } = require('../test/data');
 let MONITOR_ROLE;
 let ADMIN_ROLE;
 
@@ -16,6 +16,8 @@ contract('Bridge', accounts => {
   const toAddress = accountReceiver;
   let feePercentageBridge;
   let gasPrice = minGasPrice;
+  let feeBRL = gasAcceptTransfer * quoteETH_BRZ * minGasPrice;
+  let minBRZFee;  
 
   before(async () => {
     brz = await BRZToken.new({ from: owner });
@@ -26,6 +28,7 @@ contract('Bridge', accounts => {
 
     feePercentageBridge = (await bridge.getFeePercentageBridge({from: anyAccount})).toNumber();
     if (lp) console.log("feePercentageBridge: " + feePercentageBridge);
+    await bridge.setGasAcceptTransfer(gasAcceptTransfer, {from: owner});
 
     //Blockchains
     await bridge.addBlockchain("BinanceSmartChainTestnet", {from: owner});
@@ -39,7 +42,8 @@ contract('Bridge', accounts => {
     //Because the Ethereum blockchain has high fees, it will be used here.
     await bridge.setMinGasPrice("EthereumRinkeby", minGasPrice, {from: admin});
     await bridge.setMinTokenAmount("EthereumRinkeby", minAmount, {from: admin});
-    
+    await bridge.setQuoteETH_BRZ(quoteETH_BRZ, {from: admin});    
+    minBRZFee =  (await bridge.getMinBRZFee("EthereumRinkeby", {from: anyAccount})) * 1;
   });
 
   beforeEach('test', async () => {
@@ -52,7 +56,7 @@ contract('Bridge', accounts => {
 
   console.log("\n\n");
  
-  describe('Simulation: receive Tokens from ETH to RSK', () => {
+  describe('receiveTokens requirements from RSK to ETH', () => {
     // transactionFee[0] - fee in BRL
     // transactionFee[1] - gasFee in destiny currency - minor unit
 
@@ -60,6 +64,7 @@ contract('Bridge', accounts => {
       truffleAssertions.passes(bridge.receiveTokens(amount, [feeBRL, gasPrice], toBlockchain, toAddress, {from: accountSender}));
     });
 
+/*
     it('Should fail if toBlockchain is empty', async () => {      
       truffleAssertions.fails(
         bridge.receiveTokens(amount, [feeBRL, gasPrice], "", toAddress, {from: accountSender}),
@@ -88,7 +93,14 @@ contract('Bridge', accounts => {
       );
     });
 
-    it('Should fail if amount is zero when minAmount is zero too', async () => {
+    it('Should fail if BRZFee is less than minBRZFee', async () => {      
+      truffleAssertions.fails(
+        bridge.receiveTokens(amount, [minBRZFee-1, gasPrice], toBlockchain, toAddress, {from: accountSender}),
+        "Bridge: gasPrice is less than minimum"
+      );
+    });
+
+    it('Should fail if amount is zero even if minAmount is zero too', async () => {
       // minAmount in RSKTestnet is 0
       truffleAssertions.fails(
         bridge.receiveTokens(0, [feeBRL, gasPrice], "RSKTestnet", toAddress, {from: accountSender}),
@@ -115,6 +127,11 @@ contract('Bridge', accounts => {
         bridge.receiveTokens(amount, [feeBRL, gasPrice], toBlockchain, ZERO_ADDRESS, {from: accountSender})
       );
     });
+*/
+  });
+
+/*  
+  describe('Simulation: receive Tokens from RSK to ETH', () => {
 
     it('accountSender BRZ balance decreased after receiveTokens', async () => {
       balanceBefore = (await brz.balanceOf(accountSender, {from: anyAccount})).toNumber();
@@ -195,6 +212,7 @@ contract('Bridge', accounts => {
 
   });
 
+/*
   describe('event CrossRequest', () => {
     let transaction;
     let eventCrossRequest;
@@ -256,5 +274,5 @@ contract('Bridge', accounts => {
     });
     
   });
-
+*/
 });

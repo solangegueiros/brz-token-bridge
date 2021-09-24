@@ -3,7 +3,7 @@ const Bridge = artifacts.require("Bridge");
 const truffleAssertions = require('truffle-assertions');
 
 const { lp, DEFAULT_ADMIN_ROLE, ZERO_ADDRESS, ZERO_BYTES32, version, 
-  DECIMALPERCENT, feePercentageBridge, gasAcceptTransfer, minGasPrice, quoteETH_BRZ, feeETH, feeBRL, amount } = require('./data');
+  DECIMALPERCENT, feePercentageBridge, gasAcceptTransfer, minGasPrice, quoteETH_BRZ, amount, minAmount } = require('../test/data');
 let MONITOR_ROLE;
 let ADMIN_ROLE;
 let blockchainName = "blockchainName";
@@ -560,7 +560,7 @@ contract('Bridge', accounts => {
       assert.equal(newBrz.address, brzAddressInEvent, "brzAddressInEvent is wrong");
     });
   });
-*/
+
   describe('Roles', () => {
  
     it('owner should grantRole MONITOR_ROLE', async () => {
@@ -686,7 +686,7 @@ contract('Bridge', accounts => {
     });
 
   });
-/*
+
   describe('Pause', () => {
 
     it('Do pause', async () => {      

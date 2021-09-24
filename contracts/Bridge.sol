@@ -38,14 +38,15 @@ contract Bridge is AccessControl, IBridge, Pausable {
    * 100.00 = percentage accuracy (2) to 100%
    */
   uint256 public constant DECIMALPERCENT = 10000;
+  uint256 public constant ETH_IN_WEI = 1000000000000000000;
 
   IERC20 public token;
   uint256 private totalFeeReceivedBridge; // fee received per Bridge, not for transaction in other blockchain
   uint256 private feePercentageBridge;  // Include 2 decimal places
-  uint256 private gasAcceptTransfer;    // Estimative function acceptTransfer: 100000, it can change in EVM cost updates  
+  uint256 private gasAcceptTransfer;    // in Wei - Estimative function acceptTransfer: 100000, it can change in EVM cost updates  
   uint256 private quoteETH_BRZ;         // It can use a oracle in future versions
   mapping(string => uint256) private minBRZFee; // quoteETH_BRZ * gasAcceptTransfer * minGasPrice
-  mapping(string => uint256) private minGasPrice;
+  mapping(string => uint256) private minGasPrice; //in Wei
   mapping(string => uint256) private minTokenAmount;
   mapping(bytes32 => bool) public processed;
   string[] public blockchain;
@@ -624,8 +625,9 @@ contract Bridge is AccessControl, IBridge, Pausable {
    */
   function _updateMinBRZFee(string memory blockchainName) internal returns (bool)
   {
+    // quoteETH_BRZ (1 ETH in BRZ)
     if (!compareStrings(blockchainName, "")) {
-      uint256 newFee = quoteETH_BRZ * gasAcceptTransfer * minGasPrice[blockchainName];
+      uint256 newFee = gasAcceptTransfer * minGasPrice[blockchainName] * quoteETH_BRZ / ETH_IN_WEI;
       emit MinBRZFeeChanged(
         blockchainName,
         minBRZFee[blockchainName],
@@ -636,7 +638,7 @@ contract Bridge is AccessControl, IBridge, Pausable {
     else {
       for (uint8 i = 0; i < blockchain.length; i++) {
         if (minGasPrice[blockchain[i]] > 0) {
-          uint256 newFee = quoteETH_BRZ * gasAcceptTransfer * minGasPrice[blockchain[i]];
+          uint256 newFee = gasAcceptTransfer * minGasPrice[blockchain[i]] * quoteETH_BRZ / ETH_IN_WEI;
           emit MinBRZFeeChanged(
             blockchainName,
             minBRZFee[blockchain[i]],
@@ -646,8 +648,6 @@ contract Bridge is AccessControl, IBridge, Pausable {
         }
       }
     }
-
-
     return true;
   }
 
