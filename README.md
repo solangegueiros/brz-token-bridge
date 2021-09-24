@@ -15,11 +15,13 @@ Tech process:
 ## Deployed contracts
 
 - BSC Testnet
+[0x9A6672FC6C7bB799CCD925840d4338Eb82559cd6](https://testnet.bscscan.com/address/0x9A6672FC6C7bB799CCD925840d4338Eb82559cd6)
 
-- Rinkeby
+- Ethereum Rinkeby
+[0x76a33970889Cd239c47c9C41c4F7413c5702602e](https://rinkeby.etherscan.io/address/0x76a33970889Cd239c47c9C41c4F7413c5702602e)
 
 - RSK Testnet
-
+[0x38b8bdbacd00d0640dae54d62ce141a611a78552](https://explorer.testnet.rsk.co/address/0x38b8bdbacd00d0640dae54d62ce141a611a78552)
 
 ## Using locally
 
@@ -50,12 +52,17 @@ Check .env.example
 1. Deploy Bridge.sol
 2. tokenAddress: BRZ token address
 3. Constructor setFeePercentageBridge: 10
-4. AddBlockchains
+4. Constructor: setGasAcceptTransfer: 100000
+5. AddBlockchains
    - BinanceSmartChainTestnet
    - EthereumRinkeby
    - RSKTestnet
    - SolanaDevnet
-5. Add monitor address
+6. Add monitor address
+7. Add admin address
+8. setMinGasPrice for Ethereum in other blockchains
+9. setQuoteETH_BRZ for Ethereum in other blockchains
+10. setMinTokenAmount for Ethereum in other blockchains
 
 The files located in `migrations` folder do all steps described before.
 
@@ -72,7 +79,7 @@ truffle migrate --network rinkeby
 Verify source code on Etherscan
 
 ```shell
-truffle run verify Bridge@0xF0B3ED1Feaa633AD78e86f54097B5F9bfCBE55E1 --network rinkeby
+truffle run verify Bridge@address --network rinkeby
 ```
 
 ### BSC Testnet
@@ -88,7 +95,7 @@ truffle migrate --network bscTestnet
 Verify source code on BSCscan
 
 ```shell
-truffle run verify Bridge@0x8b453482d2bf0368Ba90E3209b763FCd7210272F --network bscTestnet
+truffle run verify Bridge@address --network bscTestnet
 ```
 
 ### RSK Testnet
