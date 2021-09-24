@@ -48,7 +48,7 @@ module.exports = async (deployer, network, accounts)=> {
   console.log("bridge.getFeePercentageBridge", response.toString());
 
   // In constructor: gasAcceptTransfer = 100000;
-  response = await bridge.getGasAcceptTransfer();
+  response = (await bridge.getGasAcceptTransfer()).toNumber();
   console.log("bridge.getGasAcceptTransfer", response);
 
   console.log("\n addBlockchain");
@@ -85,6 +85,8 @@ module.exports = async (deployer, network, accounts)=> {
   await bridge.addAdmin(AdminAddress, {from: accounts[0]});
 
   if (network != 'rinkeby') {
+    //When is NOT Ethereum, the others blockchains need this setted.
+
     //Usually owner is NOT an admin, but it is added here only to deploy process.    
     console.log("\n addAdmin temp owner");
     await bridge.addAdmin(accounts[0], {from: accounts[0]});

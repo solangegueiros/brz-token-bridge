@@ -70,11 +70,7 @@ interface IBridge {
   event GasAcceptTransferChanged(uint256 oldValue, uint256 newValue);
   event QuoteETH_BRZChanged(uint256 oldValue, uint256 newValue);
   event TokenChanged(address tokenAddress);
-  event MinBRZFeeChanged(
-    string blockchainName,
-    uint256 oldFee,
-    uint256 newFee
-  );
+  event MinBRZFeeChanged(string blockchainName, uint256 oldFee, uint256 newFee);
   event MinGasPriceChanged(
     string blockchainName,
     uint256 oldFee,
