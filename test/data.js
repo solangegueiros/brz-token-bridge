@@ -8,9 +8,11 @@ module.exports = {
 
   version: 'v0',
   DECIMALPERCENT: 10000, //100.00: percentage accuracy (2) to 100%
-  feePercentageBridge: 10,
-  minGasPrice: 50000000000,    // 50gWei: 0.00105
-  feeETH: 1050000000000000, // 21000 gas x 50gWei: 0.00105
+  feePercentageBridge: 10,    // 0.1%
+  gasAcceptTransfer: 100000,  // 100000 wei 
+  minGasPrice: 50000000000,   // 50gWei: 0.00105
+  quoteETH_BRZ: 120000000,    // 1 ETH = 12k BRZ
+  feeETH: 1050000000000000,   // 21000 gas x 50gWei: 0.00105
   feeBRL: 150000,     //15 BRZ, valor arbitrário para testes, não calculado
   amount: 2000000,    //200 BRZ
   minAmount: 1000000, //100 BRZ

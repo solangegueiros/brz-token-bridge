@@ -2,7 +2,8 @@ const BRZToken = artifacts.require("BRZToken");
 const Bridge = artifacts.require("Bridge");
 const truffleAssertions = require('truffle-assertions');
 
-const { lp, DEFAULT_ADMIN_ROLE, ZERO_ADDRESS, ZERO_BYTES32, version, DECIMALPERCENT, feePercentageBridge, feeETH, feeBRL, amount } = require('./data');
+const { lp, DEFAULT_ADMIN_ROLE, ZERO_ADDRESS, ZERO_BYTES32, version, 
+  DECIMALPERCENT, feePercentageBridge, gasAcceptTransfer, minGasPrice, quoteETH_BRZ, feeETH, feeBRL, amount } = require('./data');
 let MONITOR_ROLE;
 let ADMIN_ROLE;
 let blockchainName = "blockchainName";
@@ -42,6 +43,11 @@ contract('Bridge', accounts => {
       const response = await bridge.getFeePercentageBridge({from: anyAccount});
       assert.equal(response, feePercentageBridge, "feePercentageBridge is wrong");
     });
+
+    it('getGasAcceptTransfer should return gasAcceptTransfer defined', async () => {
+      const response = await bridge.getGasAcceptTransfer({from: anyAccount});
+      assert.equal(response, gasAcceptTransfer, "gasAcceptTransfer is wrong");
+    });    
 
   });
 
@@ -317,6 +323,72 @@ contract('Bridge', accounts => {
       newFeeInEvent = eventEmited.args[2];
       assert.equal(newFee, newFeeInEvent, "newFee in MinGasPriceChanged is wrong");
     });
+
+    it('minBRZFee updated after setMinGasPrice', async () => {
+      //minBRZFee = quoteETH_BRZ * gasAcceptTransfer * minGasPrice
+      await bridge.setGasAcceptTransfer(gasAcceptTransfer, {from: owner});
+      await bridge.setQuoteETH_BRZ(quoteETH_BRZ, {from: admin});
+
+      await bridge.setMinGasPrice(blockchainName, minGasPrice, {from: admin});
+      minBRZFeeAfter = (await bridge.getMinBRZFee(blockchainName, {from: anyAccount})) * 1;
+      minBRZFeeExpected = gasAcceptTransfer * quoteETH_BRZ * (await bridge.getMinGasPrice(blockchainName, {from: anyAccount})); 
+
+      assert.equal(minBRZFeeAfter, minBRZFeeExpected, "minBRZFee is wrong after setMinGasPrice");
+    });    
+  });
+
+  describe('quoteETH_BRZ', () => {
+
+    const newValue = 150000000;    // 1 ETH = 15k BRZ
+    beforeEach(async () => {
+      bridge = await Bridge.new(brz.address, {from: owner});
+      await bridge.addBlockchain(blockchainName, {from: owner});
+      await bridge.addAdmin(admin, {from: owner});
+    });
+
+    it('onlyAdmin can setQuoteETH_BRZ', async () => {   
+      await bridge.setQuoteETH_BRZ(newValue, {from: admin});
+      response = await bridge.getQuoteETH_BRZ( {from: anyAccount});
+      assert.equal(response, newValue, "setQuoteETH_BRZ is wrong");
+    });
+
+    it('anyAccount can not setQuoteETH_BRZ', async () => {
+      await truffleAssertions.fails(bridge.setQuoteETH_BRZ(newValue, {from: anyAccount}), "not admin");
+    });
+
+    it('event QuoteETH_BRZChanged emited', async () => {
+      response = await bridge.setQuoteETH_BRZ(newValue, {from: admin});
+      eventEmited = response.logs[0];
+      if (lp) console.log("eventEmited\n", eventEmited);   
+      assert.equal(eventEmited.event, "QuoteETH_BRZChanged", "event QuoteETH_BRZChanged not emited");
+    });
+
+    it('oldValue updated in event QuoteETH_BRZChanged', async () => {
+      const oldValue = (await bridge.getQuoteETH_BRZ( {from: anyAccount})).toNumber();
+      response = await bridge.setQuoteETH_BRZ(newValue, {from: admin});
+      eventEmited = response.logs[0];
+      oldValueInEvent = eventEmited.args[0];
+      assert.equal(oldValue, oldValueInEvent, "oldValue in QuoteETH_BRZChanged is wrong");
+    });
+
+    it('newValue updated in event QuoteETH_BRZChanged', async () => {
+      response = await bridge.setQuoteETH_BRZ(newValue, {from: admin});
+      eventEmited = response.logs[0];
+      newValueInEvent = eventEmited.args[1];
+      assert.equal(newValue, newValueInEvent, "newValue in QuoteETH_BRZChanged is wrong");
+    });
+
+    it('minBRZFee updated after setQuoteETH_BRZ', async () => {
+      //minBRZFee = quoteETH_BRZ * gasAcceptTransfer * minGasPrice
+      await bridge.setMinGasPrice(blockchainName, minGasPrice, {from: admin});
+      await bridge.setGasAcceptTransfer(gasAcceptTransfer, {from: owner});
+
+      await bridge.setQuoteETH_BRZ(quoteETH_BRZ, {from: admin});
+      minBRZFeeAfter = (await bridge.getMinBRZFee(blockchainName, {from: anyAccount})) * 1;
+      minBRZFeeExpected = gasAcceptTransfer * minGasPrice *  (await bridge.getQuoteETH_BRZ({from: anyAccount}));
+
+      assert.equal(minBRZFeeAfter, minBRZFeeExpected, "minBRZFee is wrong after setQuoteETH_BRZ");
+    });    
   });
 
   describe('MinTokenAmount', () => {
@@ -360,6 +432,61 @@ contract('Bridge', accounts => {
       assert.equal(newAmount, newAmountInEvent, "newAmount in MinTokenAmountChanged is wrong");
     });
 
+  });
+
+  describe('gasAcceptTransfer', () => {
+
+    const newValue = 120000;    // wei
+    beforeEach(async () => {
+      bridge = await Bridge.new(brz.address, {from: owner});
+      await bridge.addBlockchain(blockchainName, {from: owner});
+      await bridge.addAdmin(admin, {from: owner});
+    });
+
+    it('onlyOwner can setGasAcceptTransfer', async () => {   
+      await bridge.setGasAcceptTransfer(gasAcceptTransfer, {from: owner});
+      response = (await bridge.getGasAcceptTransfer( {from: anyAccount})).toNumber();
+      assert.equal(response, gasAcceptTransfer, "setGasAcceptTransfer is wrong");
+    });
+
+    it('anyAccount can not setGasAcceptTransfer', async () => {
+      await truffleAssertions.fails(bridge.setGasAcceptTransfer(newValue, {from: anyAccount}), "not owner");
+    });
+
+    it('event GasAcceptTransferChanged emited', async () => {
+      response = await bridge.setGasAcceptTransfer(newValue, {from: owner});
+      eventEmited = response.logs[0];
+      if (lp) console.log("eventEmited\n", eventEmited);   
+      assert.equal(eventEmited.event, "GasAcceptTransferChanged", "event GasAcceptTransferChanged not emited");
+    });
+
+    it('oldValue updated in event GasAcceptTransferChanged', async () => {
+      const oldValue = (await bridge.getGasAcceptTransfer( {from: anyAccount})).toNumber();
+      response = await bridge.setGasAcceptTransfer(newValue, {from: owner});
+      eventEmited = response.logs[0];
+      oldValueInEvent = eventEmited.args[0];
+      assert.equal(oldValue, oldValueInEvent, "oldValue in GasAcceptTransferChanged is wrong");
+    });
+
+    it('newValue updated in event GasAcceptTransferChanged', async () => {
+      response = await bridge.setGasAcceptTransfer(newValue, {from: owner});
+      eventEmited = response.logs[0];
+      newValueInEvent = eventEmited.args[1];
+      assert.equal(newValue, newValueInEvent, "newValue in GasAcceptTransferChanged is wrong");
+    });
+
+    it('minBRZFee updated after setGasAcceptTransfer', async () => {
+      //minBRZFee = quoteETH_BRZ * gasAcceptTransfer * minGasPrice
+      await bridge.setQuoteETH_BRZ(quoteETH_BRZ, {from: admin});
+      await bridge.setMinGasPrice(blockchainName, minGasPrice, {from: admin});
+
+      await bridge.setGasAcceptTransfer(gasAcceptTransfer, {from: owner});
+      minBRZFeeAfter = (await bridge.getMinBRZFee(blockchainName, {from: anyAccount})) * 1;
+      minBRZFeeExpected = quoteETH_BRZ * minGasPrice * (await bridge.getGasAcceptTransfer({from: anyAccount})); 
+
+      assert.equal(minBRZFeeAfter, minBRZFeeExpected, "minBRZFee is wrong after setMinGasPrice");
+    });
+        
   });
 
   describe('FeePercentageBridge', () => {
@@ -433,9 +560,9 @@ contract('Bridge', accounts => {
       assert.equal(newBrz.address, brzAddressInEvent, "brzAddressInEvent is wrong");
     });
   });
-
+*/
   describe('Roles', () => {
-
+ 
     it('owner should grantRole MONITOR_ROLE', async () => {
       await truffleAssertions.passes(
         bridge.grantRole(MONITOR_ROLE, monitor2, {from: owner})
@@ -453,6 +580,27 @@ contract('Bridge', accounts => {
         bridge.grantRole(MONITOR_ROLE, monitor2, {from: anyAccount})
       )
     });    
+
+    it('owner should revokeRole MONITOR_ROLE', async () => {
+      await bridge.grantRole(MONITOR_ROLE, monitor2, {from: owner});
+      await truffleAssertions.passes(
+        bridge.revokeRole(MONITOR_ROLE, monitor2, {from: owner})
+      )
+    });
+
+    it('monitor should not revokeRole MONITOR_ROLE', async () => {
+      await bridge.grantRole(MONITOR_ROLE, monitor2, {from: owner});
+      await truffleAssertions.fails(
+        bridge.revokeRole(MONITOR_ROLE, monitor2, {from: monitor})
+      )
+    });
+
+    it('anyAccount should not revokeRole MONITOR_ROLE', async () => {
+      await bridge.grantRole(MONITOR_ROLE, monitor2, {from: owner});
+      await truffleAssertions.fails(
+        bridge.revokeRole(MONITOR_ROLE, monitor2, {from: anyAccount})
+      )
+    });
 
     it('owner should grantRole DEFAULT_ADMIN_ROLE', async () => {
       await truffleAssertions.passes(
@@ -472,8 +620,73 @@ contract('Bridge', accounts => {
       )
     });
 
-  });
+    it('owner should revokeRole DEFAULT_ADMIN_ROLE', async () => {
+      await bridge.grantRole(DEFAULT_ADMIN_ROLE, owner2, {from: owner});
+      await truffleAssertions.passes(
+        bridge.revokeRole(DEFAULT_ADMIN_ROLE, owner2, {from: owner})
+      )
+    });
 
+    it('anyAccount should not revokeRole DEFAULT_ADMIN_ROLE', async () => {
+      await bridge.grantRole(DEFAULT_ADMIN_ROLE, owner2, {from: owner});
+      await truffleAssertions.fails(
+        bridge.revokeRole(DEFAULT_ADMIN_ROLE, owner2, {from: anyAccount})
+      )
+    });
+
+    it('monitor should not revokeRole DEFAULT_ADMIN_ROLE', async () => {
+      await bridge.grantRole(DEFAULT_ADMIN_ROLE, owner2, {from: owner});
+      await truffleAssertions.fails(
+        bridge.revokeRole(DEFAULT_ADMIN_ROLE, owner2, {from: monitor})
+      )
+    });
+
+    it('owner should not revokeRole yourself for DEFAULT_ADMIN_ROLE', async () => {
+      await truffleAssertions.fails(
+        bridge.revokeRole(DEFAULT_ADMIN_ROLE, owner, {from: owner})
+      )
+    }); 
+   
+    it('owner should grantRole ADMIN_ROLE', async () => {
+      await truffleAssertions.passes(
+        bridge.grantRole(ADMIN_ROLE, admin, {from: owner})
+      )
+    });
+
+    it('admin should not grantRole ADMIN_ROLE', async () => {
+      await truffleAssertions.fails(
+        bridge.grantRole(ADMIN_ROLE, anyAccount, {from: admin})
+      )
+    });
+
+    it('anyAccount should not grantRole ADMIN_ROLE', async () => {
+      await truffleAssertions.fails(
+        bridge.grantRole(ADMIN_ROLE, admin2, {from: anyAccount})
+      )
+    });
+
+    it('owner should not renounceRole DEFAULT_ADMIN_ROLE', async () => {
+      await truffleAssertions.fails(
+        bridge.renounceRole(DEFAULT_ADMIN_ROLE, owner, {from: owner})
+      )
+    });
+    
+    it('monitor should renounceRole MONITOR_ROLE', async () => {
+      await bridge.grantRole(MONITOR_ROLE, monitor, {from: owner});
+      await truffleAssertions.passes(        
+        bridge.renounceRole(MONITOR_ROLE, monitor, {from: monitor})
+      )
+    });    
+    
+    it('admin should renounceRole ADMIN_ROLE', async () => {
+      await bridge.grantRole(ADMIN_ROLE, admin, {from: owner});
+      await truffleAssertions.passes(
+        bridge.renounceRole(ADMIN_ROLE, admin, {from: admin})
+      )
+    });
+
+  });
+/*
   describe('Pause', () => {
 
     it('Do pause', async () => {      

@@ -3,11 +3,10 @@
 The token bridge provides the logic for transfer BRZ token between blockchains.
 
 Tech process:
-- An account call the function `receiveTokens` in blockchain **A** sendin tokens.
+- An account call the function `receiveTokens` in blockchain **A** sending tokens.
 - An external monitor follow the event `CrossRequest`.
 - Wait `N` confirmations of a receiveTokens's transaction.
-- The external monitor calls the function `acceptTransfer` to send tokens to the account's internal balance.
-- The account will calls the function `claim` to send the tokens to its address.
+- The external monitor calls the function `acceptTransfer` to send tokens to the destination's account.
 
 ## Bridge.sol documentation
 

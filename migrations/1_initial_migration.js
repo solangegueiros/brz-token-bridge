@@ -2,6 +2,10 @@ const BRZToken = artifacts.require("BRZToken");
 const Bridge = artifacts.require("Bridge");
 
 const MonitorAddress = "0xff4dbdf4a43f5889fc24f112ea2b596d137cf1f7";
+const AdminAddress = "0xa52515946DAABe072f446Cc014a4eaA93fb9Fd79";
+const minGasPrice = 50000000000;    // 50gWei
+const quoteETH_BRZ = 120000000;     // 1 ETH = 12k BRZ
+const minTokenAmount = 3000000;      // 300 BRZ
 
 module.exports = async (deployer, network, accounts)=> {
 
@@ -68,8 +72,30 @@ module.exports = async (deployer, network, accounts)=> {
   blockchainList = await bridge.listBlockchain();
   console.log("blockchainList", blockchainList);
 
-  console.log("\n addMonitor");
-  await bridge.addMonitor(MonitorAddress, {from: accounts[0]});
+  console.log("\n addMonitor", MonitorAddress);
+  await bridge.addMonitor(MonitorAddress, {from: accounts[0]});  
+
+  //Admin
+  console.log("\n addAdmin", AdminAddress);
+  await bridge.addAdmin(AdminAddress, {from: accounts[0]});
+
+  if (network != 'rinkeby') {
+    //Usually owner is NOT an admin, but it is added here only to deploy process.    
+    console.log("\n addAdmin temp owner");
+    await bridge.addAdmin(accounts[0], {from: accounts[0]});
+
+    console.log("\n setMinGasPrice", minGasPrice);
+    await bridge.setMinGasPrice("EthereumRinkeby", minGasPrice, {from: accounts[0]});
+
+    console.log("\n setQuoteETH_BRZ", quoteETH_BRZ);
+    await bridge.setQuoteETH_BRZ(quoteETH_BRZ, {from: accounts[0]});
+
+    console.log("\n setMinTokenAmount", minTokenAmount);
+    await bridge.setMinTokenAmount("EthereumRinkeby", minTokenAmount, {from: accounts[0]});
+
+    await bridge.delAdmin(accounts[0], {from: accounts[0]});
+  } 
+
   console.log("\n\n");
 
 };
