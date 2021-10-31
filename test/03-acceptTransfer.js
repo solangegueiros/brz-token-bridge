@@ -37,15 +37,15 @@ contract('Bridge', accounts => {
     bridge = await Bridge.new(brz.address, {from: owner});
     if (lp) console.log("bridge: " + bridge.address);
 
-    feePercentageBridge = await bridge.getFeePercentageBridge({from: anyAccount});
+    feePercentageBridge = await bridge.feePercentageBridge({from: anyAccount});
     if (lp) console.log("feePercentageBridge: " + feePercentageBridge);
     await bridge.setGasAcceptTransfer(gasAcceptTransfer, {from: owner});
 
     //Blockchains
-    await bridge.addBlockchain("BinanceSmartChainTestnet", {from: owner});
-    await bridge.addBlockchain("EthereumRinkeby", {from: owner});
-    await bridge.addBlockchain("RSKTestnet", {from: owner});
-    await bridge.addBlockchain("SolanaDevnet", {from: owner});    
+    await bridge.addBlockchain("BinanceSmartChainTestnet", 0, 0, {from: owner});
+    await bridge.addBlockchain("EthereumRinkeby", minGasPrice, minAmount, {from: owner});
+    await bridge.addBlockchain("RSKTestnet", 0, 0, {from: owner});
+    await bridge.addBlockchain("SolanaDevnet", 0, 0, {from: owner});   
     response = await bridge.listBlockchain({from: anyAccount});
     if (lp) console.log("Blockchain list: " + response);
 
@@ -54,8 +54,6 @@ contract('Bridge', accounts => {
     //Admin
     await bridge.addAdmin(admin, {from: owner});
     //Because the Ethereum blockchain has high fees, it will be used here.
-    await bridge.setMinGasPrice("EthereumRinkeby", minGasPrice, {from: admin});
-    await bridge.setMinTokenAmount("EthereumRinkeby", minAmount, {from: admin});
     await bridge.setQuoteETH_BRZ(quoteETH_BRZ, {from: admin});    
     minBRZFee =  (await bridge.getMinBRZFee("EthereumRinkeby", {from: anyAccount})) * 1;
   });
@@ -121,10 +119,10 @@ contract('Bridge', accounts => {
       if (lp) console.log("isProcessed before: " + isProcessed);
 
       if (eventToFee > 0) {        
-        await bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor, gasPrice: eventToFee})
+        await bridge.acceptTransfer(receiver, eventAmount, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor, gasPrice: eventToFee})
       }
       else {
-        await bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
+        await bridge.acceptTransfer(receiver, eventAmount, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
       }
 
       isProcessed = await bridge.processed(transactionId);
@@ -138,43 +136,36 @@ contract('Bridge', accounts => {
 
     it('Should fail if receiver is ZERO_ADDRESS', async () => {
       await truffleAssertions.fails(
-        bridge.acceptTransfer(ZERO_ADDRESS, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor}),
-        "Bridge: receiver is zero"
+        bridge.acceptTransfer(ZERO_ADDRESS, eventAmount, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor}),
+        "receiver is zero"
       );
     });
 
     it('Should fail if amount is zero', async () => {      
       await truffleAssertions.fails(
-        bridge.acceptTransfer(receiver, 0, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor}),
-        "Bridge: amount is 0"
-      );
-    });
-
-    it('Should fail if sender is string empty', async () => {
-      await truffleAssertions.fails(
-        bridge.acceptTransfer(receiver, eventAmount, "", eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor}),
-        "Bridge: no sender"
+        bridge.acceptTransfer(receiver, 0, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor}),
+        "amount is 0"
       );
     });
 
     it('Should fail if fromBlockchain does not exists', async () => {
       await truffleAssertions.fails(
-        bridge.acceptTransfer(receiver, eventAmount, eventSender, "NoBlockchain", [blockHash, transactionHash], logIndex, {from: monitor}),
-        "Bridge: fromBlockchain not exists"
+        bridge.acceptTransfer(receiver, eventAmount, "NoBlockchain", [blockHash, transactionHash], logIndex, {from: monitor}),
+        "fromBlockchain not exists"
       );
     });
 
     it('Should fail if blockHash is null hash', async () => {
       await truffleAssertions.fails(
-        bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [ZERO_BYTES32, transactionHash], logIndex, {from: monitor}),
-        "Bridge: blockHash is null"
+        bridge.acceptTransfer(receiver, eventAmount, eventBlockchain, [ZERO_BYTES32, transactionHash], logIndex, {from: monitor}),
+        "blockHash is null"
       );
     });
 
     it('Should fail if transactionHash is null hash', async () => {
       await truffleAssertions.fails(
-        bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, ZERO_BYTES32], logIndex, {from: monitor}),
-        "Bridge: transactionHash is null"
+        bridge.acceptTransfer(receiver, eventAmount, eventBlockchain, [blockHash, ZERO_BYTES32], logIndex, {from: monitor}),
+        "transactionHash is null"
       );
     });
 
@@ -184,26 +175,26 @@ contract('Bridge', accounts => {
 
     it('anyAccount can not acceptTransfer', async () => {
       await truffleAssertions.fails(
-        bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: anyAccount}), 
+        bridge.acceptTransfer(receiver, eventAmount, eventBlockchain, [blockHash, transactionHash], logIndex, {from: anyAccount}), 
         'not monitor');
     });
 
     it('monitor acceptTransfer', async () => {
       await truffleAssertions.passes(
-        bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
+        bridge.acceptTransfer(receiver, eventAmount, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
       );
     });
     
     it('monitor can not acceptTransfer for same transaction twice', async () => {
       if (eventToFee > 0) {        
-        await bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor, gasPrice: eventToFee})
+        await bridge.acceptTransfer(receiver, eventAmount, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor, gasPrice: eventToFee})
       }
       else {
-        await bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
+        await bridge.acceptTransfer(receiver, eventAmount, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
       }      
       await truffleAssertions.fails(
-        bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
-        , "Bridge: already processed");
+        bridge.acceptTransfer(receiver, eventAmount, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
+        , "processed");
     });
 
     it('bridge BRZ balance decreased after acceptTransfer', async () => {
@@ -211,10 +202,10 @@ contract('Bridge', accounts => {
       if (lp) console.log("\n brz.balanceOf Bridge before", balanceBefore);
 
       if (eventToFee > 0) {        
-        await bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor, gasPrice: eventToFee})
+        await bridge.acceptTransfer(receiver, eventAmount, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor, gasPrice: eventToFee})
       }
       else {
-        await bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
+        await bridge.acceptTransfer(receiver, eventAmount, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
       }
 
       balanceAfter = (await brz.balanceOf(bridge.address, {from: anyAccount})).toNumber();
@@ -228,10 +219,10 @@ contract('Bridge', accounts => {
       if (lp) console.log("\n brz.balanceOf receiver before", balanceBefore);
 
       if (eventToFee > 0) {        
-        await bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor, gasPrice: eventToFee})
+        await bridge.acceptTransfer(receiver, eventAmount, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor, gasPrice: eventToFee})
       }
       else {
-        await bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
+        await bridge.acceptTransfer(receiver, eventAmount, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
       }
       
       balanceAfter = (await brz.balanceOf(receiver, {from: anyAccount})).toNumber();
@@ -246,14 +237,14 @@ contract('Bridge', accounts => {
       //Now the bridge's balance is zero
 
       await truffleAssertions.fails(
-        bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
-        , 'Bridge: insufficient balance');
+        bridge.acceptTransfer(receiver, eventAmount, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
+        , 'insufficient balance');
     }); 
 
     it('acceptTransfer should fails when bridge is paused', async () => {   
       await bridge.pause({ from: owner });
       await truffleAssertions.fails(
-        bridge.acceptTransfer(receiver, eventAmount, eventSender, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
+        bridge.acceptTransfer(receiver, eventAmount, eventBlockchain, [blockHash, transactionHash], logIndex, {from: monitor})
         , 'Pausable: paused');
 
       await bridge.unpause({ from: owner });

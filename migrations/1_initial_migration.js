@@ -44,34 +44,53 @@ module.exports = async (deployer, network, accounts)=> {
   // In constructor: feePercentageBridge = 10;  
   // console.log("bridge.setFeePercentageBridge", feePercentageBridge);
   // await bridge.setFeePercentageBridge(feePercentageBridge, {from: accounts[0]});
-  response = await bridge.getFeePercentageBridge();
-  console.log("bridge.getFeePercentageBridge", response.toString());
+  response = await bridge.feePercentageBridge();
+  console.log("bridge.feePercentageBridge", response.toString());
 
   // In constructor: gasAcceptTransfer = 100000;
-  response = (await bridge.getGasAcceptTransfer()).toNumber();
-  console.log("bridge.getGasAcceptTransfer", response);
+  response = (await bridge.gasAcceptTransfer()).toNumber();
+  console.log("bridge.gasAcceptTransfer", response);
+
+  if (network != 'rinkeby') {
+    //When is NOT Ethereum, the others blockchains need this setted.
+
+    //Usually owner is NOT an admin, but it is added here only to deploy process.    
+    console.log("\n addAdmin temp");
+    await bridge.addAdmin(accounts[0], {from: accounts[0]});
+
+    console.log("\n setQuoteETH_BRZ", quoteETH_BRZ);
+    await bridge.setQuoteETH_BRZ(quoteETH_BRZ, {from: accounts[0]});
+
+    //console.log("\n setMinGasPrice", minGasPrice);
+    //await bridge.setMinGasPrice("EthereumRinkeby", minGasPrice, {from: accounts[0]});
+
+    //console.log("\n setMinTokenAmount", minTokenAmount);
+    //await bridge.setMinTokenAmount("EthereumRinkeby", minTokenAmount, {from: accounts[0]});
+
+    await bridge.delAdmin(accounts[0], {from: accounts[0]});
+  } 
 
   console.log("\n addBlockchain");
   if (network == 'develop' || network == 'development') {
-    await bridge.addBlockchain("BinanceSmartChainTestnet", {from: accounts[0]});
-    await bridge.addBlockchain("EthereumRinkeby", {from: accounts[0]});
-    await bridge.addBlockchain("RSKTestnet", {from: accounts[0]});
-    await bridge.addBlockchain("SolanaDevnet", {from: accounts[0]});
+    await bridge.addBlockchain("BinanceSmartChainTestnet", 0, 0, true, {from: accounts[0]});
+    await bridge.addBlockchain("EthereumRinkeby", minGasPrice, minTokenAmount, true, {from: accounts[0]});
+    await bridge.addBlockchain("RSKTestnet", 0, 0, true, {from: accounts[0]});
+    await bridge.addBlockchain("SolanaDevnet", 0, 0, false, {from: accounts[0]});
   }
   else if (network == 'rinkeby') {
-    await bridge.addBlockchain("BinanceSmartChainTestnet", {from: accounts[0]});
-    await bridge.addBlockchain("RSKTestnet", {from: accounts[0]});
-    await bridge.addBlockchain("SolanaDevnet", {from: accounts[0]});
+    await bridge.addBlockchain("BinanceSmartChainTestnet", 0, 0, true, {from: accounts[0]});
+    await bridge.addBlockchain("RSKTestnet", 0, 0, true, {from: accounts[0]});
+    //await bridge.addBlockchain("SolanaDevnet", 0, 0, false, {from: accounts[0]});
   }
   else if (network == 'rskTestnet') {
-    await bridge.addBlockchain("EthereumRinkeby", {from: accounts[0]});
-    await bridge.addBlockchain("BinanceSmartChainTestnet", {from: accounts[0]});
-    await bridge.addBlockchain("SolanaDevnet", {from: accounts[0]});
+    await bridge.addBlockchain("EthereumRinkeby", minGasPrice, minTokenAmount, true, {from: accounts[0]});
+    await bridge.addBlockchain("BinanceSmartChainTestnet", 0, 0, true, {from: accounts[0]});
+    //await bridge.addBlockchain("SolanaDevnet", 0, 0, false, {from: accounts[0]});
   }  
   else if (network == 'bscTestnet') {
-    await bridge.addBlockchain("EthereumRinkeby", {from: accounts[0]});
-    await bridge.addBlockchain("RSKTestnet", {from: accounts[0]});
-    await bridge.addBlockchain("SolanaDevnet", {from: accounts[0]});
+    await bridge.addBlockchain("EthereumRinkeby", minGasPrice, minTokenAmount, true, {from: accounts[0]});
+    await bridge.addBlockchain("RSKTestnet", 0, 0, true, {from: accounts[0]});
+    //await bridge.addBlockchain("SolanaDevnet", 0, 0, false, {from: accounts[0]});
   }
   
   blockchainList = await bridge.listBlockchain();
@@ -83,25 +102,6 @@ module.exports = async (deployer, network, accounts)=> {
   //Admin
   console.log("\n addAdmin", AdminAddress);
   await bridge.addAdmin(AdminAddress, {from: accounts[0]});
-
-  if (network != 'rinkeby') {
-    //When is NOT Ethereum, the others blockchains need this setted.
-
-    //Usually owner is NOT an admin, but it is added here only to deploy process.    
-    console.log("\n addAdmin temp owner");
-    await bridge.addAdmin(accounts[0], {from: accounts[0]});
-
-    console.log("\n setMinGasPrice", minGasPrice);
-    await bridge.setMinGasPrice("EthereumRinkeby", minGasPrice, {from: accounts[0]});
-
-    console.log("\n setQuoteETH_BRZ", quoteETH_BRZ);
-    await bridge.setQuoteETH_BRZ(quoteETH_BRZ, {from: accounts[0]});
-
-    console.log("\n setMinTokenAmount", minTokenAmount);
-    await bridge.setMinTokenAmount("EthereumRinkeby", minTokenAmount, {from: accounts[0]});
-
-    await bridge.delAdmin(accounts[0], {from: accounts[0]});
-  } 
 
   console.log("\n\n");
 

@@ -39,13 +39,13 @@ contract('Bridge', accounts => {
       assert.equal(response, brz.address, "token is NOT BRZ address");
     });
 
-    it('getFeePercentageBridge should return feePercentageBridge defined', async () => {
-      const response = await bridge.getFeePercentageBridge({from: anyAccount});
+    it('feePercentageBridge should return the fee defined', async () => {
+      const response = await bridge.feePercentageBridge({from: anyAccount});
       assert.equal(response, feePercentageBridge, "feePercentageBridge is wrong");
     });
 
-    it('getGasAcceptTransfer should return gasAcceptTransfer defined', async () => {
-      const response = await bridge.getGasAcceptTransfer({from: anyAccount});
+    it('gasAcceptTransfer should return gasAcceptTransfer defined', async () => {
+      const response = await bridge.gasAcceptTransfer({from: anyAccount});
       assert.equal(response, gasAcceptTransfer, "gasAcceptTransfer is wrong");
     });    
 
@@ -63,9 +63,9 @@ contract('Bridge', accounts => {
       assert.equal(response, version, "version is wrong");
     });
 
-    it('getTotalFeeReceivedBridge is zero', async () => {
-      const response = await bridge.getTotalFeeReceivedBridge({from: anyAccount});
-      assert.equal(response, 0, "getTotalFeeReceivedBridge is NOT zero");
+    it('totalFeeReceivedBridge is zero', async () => {
+      const response = await bridge.totalFeeReceivedBridge({from: anyAccount});
+      assert.equal(response, 0, "totalFeeReceivedBridge is NOT zero");
     });
 
     it('getTokenBalance is zero', async () => {
@@ -80,7 +80,7 @@ contract('Bridge', accounts => {
     it('monitor has not role MONITOR_ROLE yet', async () => {
       response = await bridge.hasRole(MONITOR_ROLE, monitor, {from: owner});
       if (lp) console.log("monitor is in bridge MONITOR_ROLE", response);
-      assert.equal(response, false, "monitor already has role MONITOR_ROLE");
+      assert.equal(response, false, "monitor has role MONITOR_ROLE");
     });
 
     it('owner can addMonitor', async () => {
@@ -146,7 +146,7 @@ contract('Bridge', accounts => {
     it('admin has not role ADMIN_ROLE yet', async () => {
       response = await bridge.hasRole(ADMIN_ROLE, admin, {from: owner});
       if (lp) console.log("admin is in bridge ADMIN_ROLE", response);
-      assert.equal(response, false, "admin already has role ADMIN_ROLE");
+      assert.equal(response, false, "admin has role ADMIN_ROLE");
     });
 
     it('owner can addAdmin', async () => {
@@ -218,11 +218,11 @@ contract('Bridge', accounts => {
     });
 
     it('anyAccount can not addBlockchain', async () => {
-      await truffleAssertions.fails(bridge.addBlockchain(blockchainName, {from: anyAccount}), "not owner");
+      await truffleAssertions.fails(bridge.addBlockchain(blockchainName, minGasPrice, minAmount, false, {from: anyAccount}), "not owner");
     });
 
     it('onlyOwner can addBlockchain', async () => {
-      await bridge.addBlockchain(blockchainName, {from: owner});
+      await bridge.addBlockchain(blockchainName, minGasPrice, minAmount, false, {from: owner});
       response = await bridge.existsBlockchain(blockchainName, {from: owner});
       assert.isTrue(response, "addBlockchain is wrong");
     });
@@ -230,7 +230,7 @@ contract('Bridge', accounts => {
     it('it must have at least 1 blockchain', async () => {
       truffleAssertions.fails(
         bridge.delBlockchain(blockchainName, {from: owner}),
-        "Bridge: requires at least 1 blockchain"
+        "requires at least 1 blockchain"
       );      
     }); 
 
@@ -240,10 +240,10 @@ contract('Bridge', accounts => {
 
       //When you do it in one Blockchain, you do not add himself to the list.
       //Here I added all for test purposes
-      await bridge.addBlockchain("BinanceSmartChainTestnet", {from: owner});
-      await bridge.addBlockchain("EthereumRinkeby", {from: owner});
-      await bridge.addBlockchain("RSKTestnet", {from: owner});
-      await bridge.addBlockchain("SolanaDevnet", {from: owner});
+      await bridge.addBlockchain("BinanceSmartChainTestnet", 0, 0, true, {from: owner});
+      await bridge.addBlockchain("EthereumRinkeby", minGasPrice, minAmount, true, {from: owner});
+      await bridge.addBlockchain("RSKTestnet", 0, 0, true, {from: owner});
+      await bridge.addBlockchain("SolanaDevnet", 0, 0, false, {from: owner});
       await bridge.delBlockchain(blockchainName, {from: owner});
       const blockchains = ["SolanaDevnet", "BinanceSmartChainTestnet", "EthereumRinkeby", "RSKTestnet" ];
 
@@ -253,15 +253,15 @@ contract('Bridge', accounts => {
     });
 
     it('blockchainName can not be added if it already exists', async () => {
-      await bridge.addBlockchain(blockchainName, {from: owner});
+      await bridge.addBlockchain(blockchainName, minGasPrice, minAmount, false, {from: owner});
       truffleAssertions.fails(
-        bridge.addBlockchain(blockchainName, {from: owner})
-        , "Bridge: blockchain already exists");
+        bridge.addBlockchain(blockchainName, minGasPrice, minAmount, false, {from: owner})
+        , "blockchain exists");
     });    
 
     it('anyAccount can not delBlockchain', async () => {
       await truffleAssertions.fails(
-        bridge.addBlockchain(blockchainName, {from: anyAccount})
+        bridge.delBlockchain(blockchainName, {from: anyAccount})
         , "not owner");
     });
 
@@ -274,7 +274,7 @@ contract('Bridge', accounts => {
     it('blockchainName can not be deleted if it not exists', async () => {
       truffleAssertions.fails(
         bridge.delBlockchain(blockchainName, {from: owner})
-        , "Bridge: blockchain not exists");
+        , "blockchain not exists");
     });
 
   });
@@ -284,7 +284,7 @@ contract('Bridge', accounts => {
     const newFee = 20;
     beforeEach(async () => {
       bridge = await Bridge.new(brz.address, {from: owner});
-      await bridge.addBlockchain(blockchainName, {from: owner});
+      await bridge.addBlockchain(blockchainName, minGasPrice, minAmount, false, {from: owner});
       // response = await bridge.listBlockchain({from: anyAccount});
       // console.log("Blockchains: " + response);
       await bridge.addAdmin(admin, {from: owner});      
@@ -335,7 +335,8 @@ contract('Bridge', accounts => {
       minBRZFeeExpected = web3.utils.fromWei(aux, "ether") * quoteETH_BRZ;
 
       assert.equal(minBRZFeeAfter, minBRZFeeExpected, "minBRZFee is wrong after setMinGasPrice");
-    });    
+    });
+
   });
 
   describe('quoteETH_BRZ', () => {
@@ -343,13 +344,13 @@ contract('Bridge', accounts => {
     const newValue = 150000000;    // 1 ETH = 15k BRZ
     beforeEach(async () => {
       bridge = await Bridge.new(brz.address, {from: owner});
-      await bridge.addBlockchain(blockchainName, {from: owner});
+      await bridge.addBlockchain(blockchainName, 0, 0, false, {from: owner});
       await bridge.addAdmin(admin, {from: owner});
     });
 
     it('onlyAdmin can setQuoteETH_BRZ', async () => {   
       await bridge.setQuoteETH_BRZ(newValue, {from: admin});
-      response = await bridge.getQuoteETH_BRZ( {from: anyAccount});
+      response = await bridge.quoteETH_BRZ( {from: anyAccount});
       assert.equal(response, newValue, "setQuoteETH_BRZ is wrong");
     });
 
@@ -365,7 +366,7 @@ contract('Bridge', accounts => {
     });
 
     it('oldValue updated in event QuoteETH_BRZChanged', async () => {
-      const oldValue = (await bridge.getQuoteETH_BRZ( {from: anyAccount})).toNumber();
+      const oldValue = (await bridge.quoteETH_BRZ( {from: anyAccount})).toNumber();
       response = await bridge.setQuoteETH_BRZ(newValue, {from: admin});
       eventEmited = response.logs[0];
       oldValueInEvent = eventEmited.args[0];
@@ -388,7 +389,7 @@ contract('Bridge', accounts => {
       minBRZFeeAfter = (await bridge.getMinBRZFee(blockchainName, {from: anyAccount})) * 1;
 
       aux = ((await bridge.getMinGasPrice(blockchainName, {from: anyAccount})) * gasAcceptTransfer).toString();
-      minBRZFeeExpected = web3.utils.fromWei(aux, "ether") * (await bridge.getQuoteETH_BRZ({from: anyAccount}));
+      minBRZFeeExpected = web3.utils.fromWei(aux, "ether") * (await bridge.quoteETH_BRZ({from: anyAccount}));
 
       assert.equal(minBRZFeeAfter, minBRZFeeExpected, "minBRZFee is wrong after setQuoteETH_BRZ");
     });    
@@ -399,7 +400,7 @@ contract('Bridge', accounts => {
     const newAmount = 1000000;  //100 BRZs
     beforeEach(async () => {
       bridge = await Bridge.new(brz.address, {from: owner});
-      await bridge.addBlockchain(blockchainName, {from: owner});
+      await bridge.addBlockchain(blockchainName, 0, 0, false, {from: owner});
       await bridge.addAdmin(admin, {from: owner});      
     });
 
@@ -442,13 +443,13 @@ contract('Bridge', accounts => {
     const newValue = 120000;    // wei
     beforeEach(async () => {
       bridge = await Bridge.new(brz.address, {from: owner});
-      await bridge.addBlockchain(blockchainName, {from: owner});
+      await bridge.addBlockchain(blockchainName, 0, 0, false, {from: owner});
       await bridge.addAdmin(admin, {from: owner});
     });
 
     it('onlyOwner can setGasAcceptTransfer', async () => {   
       await bridge.setGasAcceptTransfer(gasAcceptTransfer, {from: owner});
-      response = (await bridge.getGasAcceptTransfer( {from: anyAccount})).toNumber();
+      response = (await bridge.gasAcceptTransfer( {from: anyAccount})).toNumber();
       assert.equal(response, gasAcceptTransfer, "setGasAcceptTransfer is wrong");
     });
 
@@ -464,7 +465,7 @@ contract('Bridge', accounts => {
     });
 
     it('oldValue updated in event GasAcceptTransferChanged', async () => {
-      const oldValue = (await bridge.getGasAcceptTransfer( {from: anyAccount})).toNumber();
+      const oldValue = (await bridge.gasAcceptTransfer( {from: anyAccount})).toNumber();
       response = await bridge.setGasAcceptTransfer(newValue, {from: owner});
       eventEmited = response.logs[0];
       oldValueInEvent = eventEmited.args[0];
@@ -485,7 +486,7 @@ contract('Bridge', accounts => {
 
       await bridge.setGasAcceptTransfer(gasAcceptTransfer, {from: owner});
       minBRZFeeAfter = (await bridge.getMinBRZFee(blockchainName, {from: anyAccount})) * 1;
-      aux = ((await bridge.getGasAcceptTransfer({from: anyAccount})) * minGasPrice).toString();
+      aux = ((await bridge.gasAcceptTransfer({from: anyAccount})) * minGasPrice).toString();
       minBRZFeeExpected = web3.utils.fromWei(aux, "ether") * quoteETH_BRZ;
 
       assert.equal(minBRZFeeAfter, minBRZFeeExpected, "minBRZFee is wrong after setMinGasPrice");
@@ -502,7 +503,7 @@ contract('Bridge', accounts => {
 
     it('onlyOwner can setFeePercentageBridge', async () => {      
       await bridge.setFeePercentageBridge(newFee, {from: owner});
-      response = await bridge.getFeePercentageBridge({from: anyAccount});
+      response = await bridge.feePercentageBridge({from: anyAccount});
       assert.equal(response, newFee, "setFeePercentageBridge is wrong");
     });
 
@@ -518,7 +519,7 @@ contract('Bridge', accounts => {
     });
 
     it('oldFee updated in event FeePercentageBridgeChanged', async () => {
-      const oldFee = (await bridge.getFeePercentageBridge({from: anyAccount})).toNumber();
+      const oldFee = (await bridge.feePercentageBridge({from: anyAccount})).toNumber();
       response = await bridge.setFeePercentageBridge(newFee, {from: owner});
       eventEmited = response.logs[0];
       oldFeeInEvent = eventEmited.args[0];
@@ -727,20 +728,20 @@ contract('Bridge', accounts => {
     it('monitor should not pause', async () => {
       await truffleAssertions.fails(
         bridge.pause({ from: monitor })
-        , "Bridge: not owner");
+        , "not owner");
     });
 
     it('monitor should not unpause', async () => {
       await bridge.pause({ from: owner });
       await truffleAssertions.fails(
         bridge.unpause({ from: monitor })
-        , "Bridge: not owner");
+        , "not owner");
     });
 
     it('anyAccount should not pause', async () => {
       await truffleAssertions.fails(
         bridge.pause({ from: anyAccount })
-        , "Bridge: not owner");
+        , "not owner");
     });
 
     it('anyAccount should not unpause', async () => {
@@ -749,7 +750,7 @@ contract('Bridge', accounts => {
 
       await truffleAssertions.fails(
         bridge.unpause({ from: anyAccount })
-        , "Bridge: not owner");
+        , "not owner");
     });    
 
     it('addMonitor should fails when bridge is paused', async () => {
@@ -773,7 +774,7 @@ contract('Bridge', accounts => {
     it('addBlockchain should fails when bridge is paused', async () => {
       blockchainName = "blockchainName";
       await truffleAssertions.fails(
-        bridge.addBlockchain(blockchainName, {from: owner})
+        bridge.addBlockchain(blockchainName, 0, 0, false, {from: owner})
         , 'Pausable: paused');
     });
 
@@ -782,7 +783,7 @@ contract('Bridge', accounts => {
       if (isPaused) await bridge.unpause({ from: owner });
 
       blockchainName = "blockchainName";
-      await bridge.addBlockchain(blockchainName, {from: owner});
+      await bridge.addBlockchain(blockchainName, 0, 0, false, {from: owner});
 
       await bridge.pause({ from: owner });
       await truffleAssertions.fails(

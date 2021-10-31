@@ -26,15 +26,15 @@ contract('Bridge', accounts => {
     bridge = await Bridge.new(brz.address, {from: owner});
     if (lp) console.log("bridge: " + bridge.address);
 
-    feePercentageBridge = await bridge.getFeePercentageBridge({from: anyAccount});
+    feePercentageBridge = await bridge.feePercentageBridge({from: anyAccount});
     if (lp) console.log("feePercentageBridge: " + feePercentageBridge);
     await bridge.setGasAcceptTransfer(gasAcceptTransfer, {from: owner});
 
     //Blockchains
-    await bridge.addBlockchain("BinanceSmartChainTestnet", {from: owner});
-    await bridge.addBlockchain("EthereumRinkeby", {from: owner});
-    await bridge.addBlockchain("RSKTestnet", {from: owner});
-    await bridge.addBlockchain("SolanaDevnet", {from: owner});    
+    await bridge.addBlockchain("BinanceSmartChainTestnet", 0, 0, {from: owner});
+    await bridge.addBlockchain("EthereumRinkeby", minGasPrice, minAmount, {from: owner});
+    await bridge.addBlockchain("RSKTestnet", 0, 0, {from: owner});
+    await bridge.addBlockchain("SolanaDevnet", 0, 0, {from: owner});    
     response = await bridge.listBlockchain({from: anyAccount});
     if (lp) console.log("Blockchain list: " + response);
 
@@ -43,8 +43,6 @@ contract('Bridge', accounts => {
     //Admin
     await bridge.addAdmin(admin, {from: owner});
     //Because the Ethereum blockchain has high fees, it will be used here.
-    await bridge.setMinGasPrice("EthereumRinkeby", minGasPrice, {from: admin});
-    await bridge.setMinTokenAmount("EthereumRinkeby", minAmount, {from: admin});
     await bridge.setQuoteETH_BRZ(quoteETH_BRZ, {from: admin});    
     minBRZFee =  (await bridge.getMinBRZFee("EthereumRinkeby", {from: anyAccount})) * 1;
   });
@@ -100,7 +98,7 @@ contract('Bridge', accounts => {
       balance = balance + 1;
       if (lp) console.log("\n bridge.getTokenBalance Bridge", balance);
 
-      truffleAssertions.fails(bridge.withdrawToken(balance, {from: owner}), "Bridge: insuficient balance");
+      truffleAssertions.fails(bridge.withdrawToken(balance, {from: owner}), "insuficient balance");
     });
 
     it('ownerBalance increased after withdrawToken', async () => {

@@ -7,12 +7,6 @@ import "./ozeppelin/token/ERC20/IERC20.sol";
 interface IBridge {
   function version() external pure returns (string memory);
 
-  function getFeePercentageBridge() external view returns (uint256);
-
-  function getGasAcceptTransfer() external view returns (uint256);
-
-  function getQuoteETH_BRZ() external view returns (uint256);
-
   function getMinBRZFee(string calldata blockchainName)
     external
     view
@@ -28,8 +22,6 @@ interface IBridge {
     view
     returns (uint256);
 
-  function getTotalFeeReceivedBridge() external view returns (uint256);
-
   function getTokenBalance() external view returns (uint256);
 
   function receiveTokens(
@@ -42,7 +34,6 @@ interface IBridge {
   function acceptTransfer(
     address receiver,
     uint256 amount,
-    string calldata sender,
     string calldata fromBlockchain,
     bytes32[2] calldata hashes, //blockHash, transactionHash
     uint32 logIndex
