@@ -147,23 +147,17 @@ along with the amount he would like to receive in the account.
 This will be spent in `toBlockchain`.
 Does not depend of amount, but of destination blockchain.
 
-It must be at least the (BRZFactorFee * minGasPrice) per blockchain.
-
-> BRZFactorFee =
->
-> Estimative function acceptTransfer (100000)
->
->            x
->
-> Estimative ETH quote in BRZ in minor unit (4 decimal places).
+It must be at least the minBRZFee per blockchain.
 
 It is used in the function acceptTransfer,
-which can not accept a BRZ fee less than BRZFactorFee * minGasPrice (per blockchain).
+which can not accept a BRZ fee less than minBRZFee (per blockchain).
+
+- gas price (transactionFee[1])
+It must be at least the minGasPrice per blockchain.
 
 - Bridge Fee - it is deducted from the requested amount.
 It is a percentage of the requested amount.
 Cannot include the transaction fee in order to be calculated.
-
 
 
 ### `getTransactionId(bytes32[2] hashes, address receiver, uint256 amount, uint32 logIndex) → bytes32` (public)
@@ -181,6 +175,7 @@ Parameters:
 - receiver - the address which will receive the tokens.
 - amount - the net amount to be transfered.
 - logIndex - the index of the event `CrossRequest` in the logs of transaction.
+- sender - address who sent the transaction `receiveTokens`, it is a string to be compatible with any blockchain.
 
 Returns: a bytes32 hash of all the information sent.
 
@@ -191,7 +186,7 @@ because the possibility of having the same origin transaction from different blo
 It is a point to be evaluated in an audit.
 
 
-### `acceptTransfer(address receiver, uint256 amount, string sender, string fromBlockchain, bytes32[2] hashes, uint32 logIndex) → bool` (external)
+### `acceptTransfer(address receiver, uint256 amount, string fromBlockchain, bytes32[2] hashes, uint32 logIndex) → bool` (external)
 
 
 
@@ -242,17 +237,6 @@ Returns token balance in bridge.
 Parameters: none
 
 Returns: integer amount of tokens in bridge
-
-
-### `getTotalFeeReceivedBridge() → uint256` (external)
-
-
-
-Returns total of fees received by bridge.
-
-Parameters: none
-
-Returns: integer
 
 
 ### `withdrawToken(uint256 amount) → bool` (external)
@@ -368,34 +352,17 @@ Requirements:
 - An owner can not revoke yourself in the role DEFAULT_ADMIN_ROLE.
 
 
-### `_updateMinBRZFee(string blockchainName) → bool` (internal)
+### `_updateMinBRZFee() → bool` (internal)
 
 
 
 This function update the minimum blockchain fee - gas price - in the minor unit.
 
 It is an internal function, called when quoteETH_BRZ, gasAcceptTransfer
-or minGasPrice[blockchainName] changed.
 
 Returns: bool - true if it is sucessful
 
 Emit the event `MinBRZFeeChanged(blockchain, oldFee, newFee)`.
-
-
-### `getQuoteETH_BRZ() → uint256` (external)
-
-
-
-Returns the quote of pair ETH / BRZ.
-
-(1 ETH = the amount of BRZ returned)
-
-in BRZ in minor unit (4 decimal places).
-
-It is used to calculate minBRZFee in destination
-which can not accept a BRZ fee less than minBRZFee (per blockchain).
-
-Returns: integer
 
 
 ### `setQuoteETH_BRZ(uint256 newValue) → bool` (public)
@@ -472,22 +439,6 @@ Parameters: string, blockchain name
 Returns: integer
 
 
-### `getGasAcceptTransfer() → uint256` (external)
-
-
-
-Returns an estimative of the gas amount used in function AcceptTransfer.
-
-(1 ETH = the amount of BRZ returned)
-
-in BRZ in minor unit (4 decimal places).
-
-It is used to calculate minBRZFee in destination
-which can not accept a BRZ fee less than minBRZFee (per blockchain).
-
-Returns: integer
-
-
 ### `setGasAcceptTransfer(uint256 newValue) → bool` (public)
 
 
@@ -538,20 +489,6 @@ Requirements:
 - blockchain must exists.
 
 Emit the event `MinTokenAmountChanged(blockchain, oldMinimumAmount, newMinimumAmount)`.
-
-
-### `getFeePercentageBridge() → uint256` (external)
-
-
-
-Returns the fee percentage bridge.
-
-For each amount received in the bridge, a fee percentage is discounted.
-This function returns this fee percentage bridge.
-
-Parameters: none
-
-Returns: integer
 
 
 ### `setFeePercentageBridge(uint256 newFee) → bool` (external)
@@ -616,7 +553,7 @@ Parameters: none
 Returns: an array of strings containing the blockchain list
 
 
-### `addBlockchain(string name) → uint256` (external)
+### `addBlockchain(string name, uint256 minGasPrice, uint256 minTokenAmount, bool checkAddress) → uint256` (external)
 
 
 
@@ -626,13 +563,23 @@ Only owner can call it.
 
 Can not be called if the Bridge is paused.
 
-Parameters: string name of blockchain to be added
+Parameters:
+- string name of blockchain to be added
+- minGasPrice
+- minTokenAmount
+- check address EVM compatible
 
-Returns: index of blockchain in the array
+Returns: index of blockchain.
+
+Important:
+- index start in 1, not 0.
+- index 0 means that the blockchain does no exist.
+- index 1 means that it is the position 0 in the array.
 
 Requirements:
 - blockchain not exists.
-
+- onlyOwner
+- whenNotPaused
 
 ### `delBlockchain(string name) → bool` (external)
 

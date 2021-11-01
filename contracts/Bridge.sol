@@ -16,9 +16,9 @@ import "./IBridge.sol";
 
 struct BlockchainStruct {
   uint256 minTokenAmount;
-  uint256 minBRZFee;      // quoteETH_BRZ * gasAcceptTransfer * minGasPrice
-  uint256 minGasPrice;    // in Wei
-  bool checkAddress;         // to verify is an address is EVM compatible is this blockchain
+  uint256 minBRZFee; // quoteETH_BRZ * gasAcceptTransfer * minGasPrice
+  uint256 minGasPrice; // in Wei
+  bool checkAddress; // to verify is an address is EVM compatible is this blockchain
 }
 
 /**
@@ -64,7 +64,7 @@ contract Bridge is AccessControl, IBridge, Pausable {
    * It is used to calculate minBRZFee in destination,
    * which can not accept a BRZ fee less than minBRZFee (per blockchain).
    */
-  uint256 public gasAcceptTransfer; 
+  uint256 public gasAcceptTransfer;
 
   /**
    * @dev the quote of pair ETH / BRZ.
@@ -76,7 +76,7 @@ contract Bridge is AccessControl, IBridge, Pausable {
    * It is used to calculate minBRZFee in destination
    * which can not accept a BRZ fee less than minBRZFee (per blockchain).
    *
-   */ 
+   */
   uint256 public quoteETH_BRZ;
 
   mapping(bytes32 => bool) public processed;
@@ -177,7 +177,7 @@ contract Bridge is AccessControl, IBridge, Pausable {
     return (keccak256(abi.encodePacked((a))) ==
       keccak256(abi.encodePacked((b))));
   }
-  
+
   /**
    * @dev This function starts the process of crossing tokens in the Bridge.
    *
@@ -264,7 +264,7 @@ contract Bridge is AccessControl, IBridge, Pausable {
     require(existsBlockchain(toBlockchain), "toBlockchain not exists");
     require(!compareStrings(toAddress, ""), "toAddress is null");
 
-    uint256 index = blockchainIndex[toBlockchain]-1;
+    uint256 index = blockchainIndex[toBlockchain] - 1;
     require(
       transactionFee[0] >= blockchainInfo[index].minBRZFee,
       "feeBRZ is less than minimum"
@@ -279,10 +279,7 @@ contract Bridge is AccessControl, IBridge, Pausable {
       "amount is less than minimum"
     );
     if (blockchainInfo[index].checkAddress) {
-      require(
-        bytes(toAddress).length == 42,
-        "invalid destination address"
-      );     
+      require(bytes(toAddress).length == 42, "invalid destination address");
     }
 
     //The total amount is the amount desired plus the blockchain fee to destination, in the token unit
@@ -380,14 +377,8 @@ contract Bridge is AccessControl, IBridge, Pausable {
    * > Only monitor can call it!
    *
    */
-  function _sendToken(address to, uint256 amount)
-    private
-    returns (bool)
-  {
-    require(
-      token.balanceOf(address(this)) >= amount,
-      "insufficient balance"
-    );
+  function _sendToken(address to, uint256 amount) private returns (bool) {
+    require(token.balanceOf(address(this)) >= amount, "insufficient balance");
     token.transfer(to, amount);
     return true;
   }
@@ -440,10 +431,7 @@ contract Bridge is AccessControl, IBridge, Pausable {
   ) external override onlyMonitor whenNotPaused returns (bool) {
     require(receiver != ZERO_ADDRESS, "receiver is zero");
     require(amount > 0, "amount is 0");
-    require(
-      existsBlockchain(fromBlockchain),
-      "fromBlockchain not exists"
-    );
+    require(existsBlockchain(fromBlockchain), "fromBlockchain not exists");
     require(hashes[0] != NULL_HASH, "blockHash is null");
     require(hashes[1] != NULL_HASH, "transactionHash is null");
 
@@ -484,10 +472,7 @@ contract Bridge is AccessControl, IBridge, Pausable {
    *
    */
   function withdrawToken(uint256 amount) external onlyOwner returns (bool) {
-    require(
-      amount <= token.balanceOf(address(this)),
-      "insuficient balance"
-    );
+    require(amount <= token.balanceOf(address(this)), "insuficient balance");
     token.transfer(_msgSender(), amount);
     return true;
   }
@@ -599,10 +584,7 @@ contract Bridge is AccessControl, IBridge, Pausable {
    */
   function renounceRole(bytes32 role, address account) public virtual override {
     require(role != DEFAULT_ADMIN_ROLE, "can not renounce role owner");
-    require(
-      account == _msgSender(),
-      "can only renounce roles for self"
-    );
+    require(account == _msgSender(), "can only renounce roles for self");
     super.renounceRole(role, account);
   }
 
@@ -625,10 +607,7 @@ contract Bridge is AccessControl, IBridge, Pausable {
     onlyRole(getRoleAdmin(role))
   {
     if (role == DEFAULT_ADMIN_ROLE) {
-      require(
-        account != _msgSender(),
-        "can not revoke yourself in role owner"
-      );
+      require(account != _msgSender(), "can not revoke yourself in role owner");
     }
     super.revokeRole(role, account);
   }
@@ -643,10 +622,7 @@ contract Bridge is AccessControl, IBridge, Pausable {
    * Emit the event `MinBRZFeeChanged(blockchain, oldFee, newFee)`.
    *
    */
-  function _updateMinBRZFee()
-    internal
-    returns (bool)
-  {
+  function _updateMinBRZFee() internal returns (bool) {
     for (uint8 i = 0; i < blockchainInfo.length; i++) {
       if (blockchainInfo[i].minGasPrice > 0) {
         uint256 newFee = (gasAcceptTransfer *
@@ -702,7 +678,7 @@ contract Bridge is AccessControl, IBridge, Pausable {
     override
     returns (uint256)
   {
-    return blockchainInfo[blockchainIndex[blockchainName]-1].minGasPrice;
+    return blockchainInfo[blockchainIndex[blockchainName] - 1].minGasPrice;
   }
 
   /**
@@ -731,14 +707,16 @@ contract Bridge is AccessControl, IBridge, Pausable {
     returns (bool)
   {
     require(existsBlockchain(blockchainName), "blockchain not exists");
-    uint256 index = blockchainIndex[blockchainName]-1;
+    uint256 index = blockchainIndex[blockchainName] - 1;
     emit MinGasPriceChanged(
       blockchainName,
       blockchainInfo[index].minGasPrice,
       newFee
     );
     blockchainInfo[index].minGasPrice = newFee;
-    blockchainInfo[index].minBRZFee = (gasAcceptTransfer * newFee * quoteETH_BRZ) / (1 ether);
+    blockchainInfo[index].minBRZFee =
+      (gasAcceptTransfer * newFee * quoteETH_BRZ) /
+      (1 ether);
     return true;
   }
 
@@ -765,7 +743,7 @@ contract Bridge is AccessControl, IBridge, Pausable {
     override
     returns (uint256)
   {
-    return blockchainInfo[blockchainIndex[blockchainName]-1].minBRZFee;
+    return blockchainInfo[blockchainIndex[blockchainName] - 1].minBRZFee;
   }
 
   /**
@@ -810,8 +788,8 @@ contract Bridge is AccessControl, IBridge, Pausable {
     view
     override
     returns (uint256)
-  {    
-    return blockchainInfo[blockchainIndex[blockchainName]-1].minTokenAmount;
+  {
+    return blockchainInfo[blockchainIndex[blockchainName] - 1].minTokenAmount;
   }
 
   /**
@@ -838,7 +816,7 @@ contract Bridge is AccessControl, IBridge, Pausable {
     returns (bool)
   {
     require(existsBlockchain(blockchainName), "blockchain not exists");
-    uint256 index = blockchainIndex[blockchainName]-1;    
+    uint256 index = blockchainIndex[blockchainName] - 1;
     emit MinTokenAmountChanged(
       blockchainName,
       blockchainInfo[index].minTokenAmount,
@@ -920,10 +898,8 @@ contract Bridge is AccessControl, IBridge, Pausable {
     override
     returns (bool)
   {
-    if (blockchainIndex[name] == 0)
-        return false;
-    else
-        return true;
+    if (blockchainIndex[name] == 0) return false;
+    else return true;
   }
 
   /**
@@ -945,7 +921,7 @@ contract Bridge is AccessControl, IBridge, Pausable {
    *
    * Can not be called if the Bridge is paused.
    *
-   * Parameters: 
+   * Parameters:
    * - string name of blockchain to be added
    * - minGasPrice
    * - minTokenAmount
@@ -953,7 +929,7 @@ contract Bridge is AccessControl, IBridge, Pausable {
    *
    * Returns: index of blockchain.
    *
-   * Important: 
+   * Important:
    * - index start in 1, not 0.
    * - index 0 means that the blockchain does no exist.
    * - index 1 means that it is the position 0 in the array.
@@ -963,12 +939,12 @@ contract Bridge is AccessControl, IBridge, Pausable {
    * - onlyOwner
    * - whenNotPaused
    */
-  function addBlockchain(string memory name, uint256 minGasPrice, uint256 minTokenAmount, bool checkAddress)
-    external
-    onlyOwner
-    whenNotPaused
-    returns (uint256)
-  {
+  function addBlockchain(
+    string memory name,
+    uint256 minGasPrice,
+    uint256 minTokenAmount,
+    bool checkAddress
+  ) external onlyOwner whenNotPaused returns (uint256) {
     require(!existsBlockchain(name), "blockchain exists");
 
     BlockchainStruct memory b;
@@ -1008,14 +984,14 @@ contract Bridge is AccessControl, IBridge, Pausable {
     require(existsBlockchain(name), "blockchain not exists");
     require(blockchainInfo.length > 1, "requires at least 1 blockchain");
 
-    uint256 indexToDelete = blockchainIndex[name]-1;
-    uint256 indexToMove = blockchainInfo.length-1;
+    uint256 indexToDelete = blockchainIndex[name] - 1;
+    uint256 indexToMove = blockchainInfo.length - 1;
     //string memory keyToMove = blockchainInfo[indexToMove].name;
     string memory keyToMove = blockchain[indexToMove];
 
     blockchainInfo[indexToDelete] = blockchainInfo[indexToMove];
     blockchain[indexToDelete] = blockchain[indexToMove];
-    blockchainIndex[keyToMove] = indexToDelete+1;
+    blockchainIndex[keyToMove] = indexToDelete + 1;
 
     delete blockchainIndex[name];
     blockchainInfo.pop();

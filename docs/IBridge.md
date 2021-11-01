@@ -11,24 +11,6 @@
 
 
 
-### `getFeePercentageBridge() → uint256` (external)
-
-
-
-
-
-### `getGasAcceptTransfer() → uint256` (external)
-
-
-
-
-
-### `getQuoteETH_BRZ() → uint256` (external)
-
-
-
-
-
 ### `getMinBRZFee(string blockchainName) → uint256` (external)
 
 
@@ -47,12 +29,6 @@
 
 
 
-### `getTotalFeeReceivedBridge() → uint256` (external)
-
-
-
-
-
 ### `getTokenBalance() → uint256` (external)
 
 
@@ -65,7 +41,7 @@
 
 
 
-### `acceptTransfer(address receiver, uint256 amount, string sender, string fromBlockchain, bytes32[2] hashes, uint32 logIndex) → bool` (external)
+### `acceptTransfer(address receiver, uint256 amount, string fromBlockchain, bytes32[2] hashes, uint32 logIndex) → bool` (external)
 
 
 
