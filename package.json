@@ -44,9 +44,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/solangegueiros/brz-token-bridge.git"
+    "url": "git+https://github.com/TransferoSwiss/brz-token-bridge.git"
   },
   "bugs": {
-    "url": "https://github.com/solangegueiros/brz-token-bridge/issues"
+    "url": "https://github.com/TransferoSwiss/brz-token-bridge/issues"
   }
 }
