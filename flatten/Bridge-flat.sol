@@ -27,8 +27,6 @@ abstract contract Context {
 
 // File: contracts\ozeppelin\utils\Strings.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.0;
 
 /**
@@ -100,8 +98,6 @@ library Strings {
 
 // File: contracts\ozeppelin\utils\introspection\IERC165.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.0;
 
 /**
@@ -126,8 +122,6 @@ interface IERC165 {
 }
 
 // File: contracts\ozeppelin\utils\introspection\ERC165.sol
-
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -162,8 +156,6 @@ abstract contract ERC165 is IERC165 {
 }
 
 // File: contracts\ozeppelin\access\AccessControl.sol
-
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -453,8 +445,6 @@ abstract contract AccessControl is Context, IAccessControl, ERC165 {
 
 // File: contracts\ozeppelin\security\Pausable.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.0;
 
 
@@ -545,8 +535,6 @@ abstract contract Pausable is Context {
 
 // File: contracts\ozeppelin\token\ERC20\IERC20.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.0;
 
 /**
@@ -632,7 +620,6 @@ interface IERC20 {
 
 // File: contracts\IBridge.sol
 
-// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 // IERC20.sol :  https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.1.0/contracts/token/ERC20/IERC20.sol
@@ -710,7 +697,6 @@ interface IBridge {
 
 // File: contracts\Bridge.sol
 
-// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 /// @title BRZ token Bridge
