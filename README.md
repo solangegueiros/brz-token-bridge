@@ -15,13 +15,13 @@ Tech process:
 ## Deployed contracts
 
 - BSC Testnet
-[0x9A6672FC6C7bB799CCD925840d4338Eb82559cd6](https://testnet.bscscan.com/address/0x9A6672FC6C7bB799CCD925840d4338Eb82559cd6)
+[0xFB551A40571510b0693950521385611cBf202328](https://testnet.bscscan.com/address/0xFB551A40571510b0693950521385611cBf202328)
 
 - Ethereum Rinkeby
-[0x76a33970889Cd239c47c9C41c4F7413c5702602e](https://rinkeby.etherscan.io/address/0x76a33970889Cd239c47c9C41c4F7413c5702602e)
+[0x9Ec6733aAd19cCfBecc821635e745F79f35470dF](https://rinkeby.etherscan.io/address/0x9Ec6733aAd19cCfBecc821635e745F79f35470dF)
 
 - RSK Testnet
-[0x38b8bdbacd00d0640dae54d62ce141a611a78552](https://explorer.testnet.rsk.co/address/0x38b8bdbacd00d0640dae54d62ce141a611a78552)
+[0x65E895a0688E243f5e5FC681C26Ae6A7616e2921](https://explorer.testnet.rsk.co/address/0x65e895a0688E243F5e5Fc681C26Ae6a7616e2921)
 
 ## Using locally
 
@@ -60,9 +60,7 @@ Check .env.example
    - SolanaDevnet
 6. Add monitor address
 7. Add admin address
-8. setMinGasPrice for Ethereum in other blockchains
-9. setQuoteETH_BRZ for Ethereum in other blockchains
-10. setMinTokenAmount for Ethereum in other blockchains
+8. setQuoteETH_BRZ for Ethereum in other blockchains
 
 The files located in `migrations` folder do all steps described before.
 
